@@ -1,0 +1,10 @@
+{
+  // Cloudflare Workers(정적 에셋) 배포 설정 — `npm run deploy`
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zun-ai-developer-tycoon",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

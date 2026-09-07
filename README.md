@@ -45,3 +45,16 @@ src/
 ```
 
 기술 스택: React 19 · TypeScript · Vite 7 · Tailwind CSS 4 (추가 런타임 의존성 없음)
+
+## Cloudflare 배포
+
+**방법 A — Cloudflare Pages (Git 연동, 푸시할 때마다 자동 배포)**
+1. Cloudflare 대시보드 → Workers & Pages → Create → Pages → Connect to Git → 이 저장소 선택
+2. 빌드 설정: Framework preset `Vite`, Build command `npm run build`, Build output directory `dist`
+3. Save and Deploy → `https://<프로젝트명>.pages.dev` 에서 바로 플레이
+
+**방법 B — Wrangler CLI (Workers 정적 에셋)**
+```bash
+npx wrangler login     # 최초 1회, 브라우저에서 Cloudflare 로그인
+npm run deploy         # 빌드 후 배포 → https://zun-ai-developer-tycoon.<계정>.workers.dev
+```
