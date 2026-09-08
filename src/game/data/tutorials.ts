@@ -165,7 +165,7 @@ export const TUTORIALS: TutorialDef[] = [
       {
         icon: '🐛',
         title: '버그가 생겼어!',
-        body: '출시 직전에 버그가 터지면 진행도가 되돌아가. AI 등급을 올리면 버그 확률이 크게 줄어드니 참고해.',
+        body: '출시 직전에 버그가 터지면 진행도가 되돌아가고, 긴급 대응 비용까지 나가. 버그를 겪고 나온 버전은 출시 보너스도 깎여. STABLE 전략은 버그 확률이 절반이고, AI 등급을 올려도 크게 줄어들어.',
       },
     ],
   },
@@ -267,12 +267,15 @@ export const TUTORIAL_MAP: Record<string, TutorialDef> = Object.fromEntries(TUTO
 
 /** 조건이 처음 참이 되는 순간 해당 튜토리얼을 재생한다 (위에서부터 하나씩) */
 export const TUTORIAL_TRIGGERS: { id: string; when: (s: GameState) => boolean }[] = [
+  // 버그는 가장 당황하는 순간이라 대기열 맨 앞에 둔다.
+  // 버그 상태는 몇 초 만에 사라지므로 "겪은 적이 있다"까지 조건에 넣어야
+  // 안내 간격에 밀려 영영 못 보는 일이 없다.
+  { id: 'bug', when: (s) => s.activeDevs.some((a) => a.bugged) || s.stats.bugsFixed >= 1 },
   { id: 'strategy', when: (s) => s.stats.projectsCompleted >= 1 },
   { id: 'eventchoice', when: (s) => s.stats.eventsTriggered >= 2 },
   { id: 'upgrades', when: (s) => s.money >= upgradeCost(UPGRADE_MAP.pc, s.upgrades.pc) && s.stats.projectsCompleted >= 1 },
   { id: 'boost', when: (s) => s.level >= BOOST_UNLOCK_LEVEL },
   { id: 'slots', when: (s) => s.upgrades.monitor >= 1 },
-  { id: 'bug', when: (s) => s.activeDevs.some((a) => a.bugged) },
   { id: 'events', when: (s) => s.stats.eventsTriggered >= 1 },
   { id: 'ai', when: (s) => s.level >= (AI_TIERS[1]?.requiredLevel ?? 4) },
   { id: 'stage', when: (s) => s.level >= (STAGES[1]?.requiredLevel ?? 6) },
