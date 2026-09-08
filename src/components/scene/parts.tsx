@@ -130,7 +130,7 @@ export function Window({ x, y, w, h, night = true, city }: { x: number; y: numbe
             const bh = 10 + ((i * 7) % 20);
             return (
               <g key={i}>
-                <R x={x + bx} y={y + h - bh} w={Math.min(8 + (i % 3) * 2, w - bx)} h={bh} c={i % 2 ? '#39497a' : '#2a3765'} />
+                <R x={x + bx} y={y + h - bh} w={Math.max(1, Math.min(8 + (i % 3) * 2, w - bx))} h={bh} c={i % 2 ? '#39497a' : '#2a3765'} />
                 <R x={x + bx + 2} y={y + h - bh + 3} w={2} h={2} c="#ffe08a" className="anim-blink-2" style={{ animationDelay: `${i * 0.3}s` }} />
                 <R x={x + bx + 5} y={y + h - bh + 8} w={2} h={2} c="#ffe08a" opacity={0.7} />
               </g>
@@ -247,7 +247,7 @@ export function Monitor({ x, y, w, h, bezel = '#171b2c', active, idleColor = '#0
       ) : ultrawide ? (
         <g>
           {Array.from({ length: 8 }).map((_, i) => (
-            <R key={i} x={sx + 6 + i * ((sw - 12) / 8)} y={sy + sh - 6 - 4 * (1 + (i % 4))} w={(sw - 12) / 8 - 3} h={4 * (1 + (i % 4))} c={['#4f8dff', '#8b6cff', '#5ee596', '#ff9d7a'][i % 4]} className="bar-anim" style={{ animationDelay: `${i * 0.25}s` }} />
+            <R key={i} x={sx + 6 + i * ((sw - 12) / 8)} y={sy + sh - 6 - 4 * (1 + (i % 4))} w={Math.max(1, (sw - 12) / 8 - 3)} h={4 * (1 + (i % 4))} c={['#4f8dff', '#8b6cff', '#5ee596', '#ff9d7a'][i % 4]} className="bar-anim" style={{ animationDelay: `${i * 0.25}s` }} />
           ))}
         </g>
       ) : (

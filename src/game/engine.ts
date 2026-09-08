@@ -1,7 +1,7 @@
-import type { AchievementDef, ActiveEffect, BuyMode, GameEventDef, GameState, Settings, Stats, UpgradeId } from './types';
+import type { AchievementDef, ActiveEffect, BuyMode, DevStrategy, EventChoiceDef, GameEventDef, GameState, Settings, Stats, UpgradeId } from './types';
 import {
   ACHIEVEMENT_INCOME_PER, AUTODEV_UNLOCK_LEVEL, BOOST_COOLDOWN_SEC, BOOST_DURATION_SEC, BOOST_MULT, BOOST_UNLOCK_LEVEL,
-  BUG_PROGRESS_PENALTY, DAILY_BASE_SECONDS, DAILY_MAX_STREAK, DAILY_MIN_MONEY, DAILY_STREAK_SECONDS,
+  BUGGED_LAUNCH_PENALTY, BUG_FIX_COST_RATE, BUG_PROGRESS_PENALTY, DAILY_BASE_SECONDS, DAILY_MAX_STREAK, DAILY_MIN_MONEY, DAILY_STREAK_SECONDS,
   EVENT_MAX_INTERVAL_SEC, EVENT_MIN_INTERVAL_SEC, GOLDEN_MIN_MONEY, GOLDEN_REWARD_SECONDS,
   MAX_LEVEL, PRESTIGE_MIN_EARNED, PRESTIGE_MIN_LEVEL, SAVE_VERSION, START_MONEY, dateKey, isNextDay, xpToNext,
 } from './constants';
@@ -13,6 +13,7 @@ import { UPGRADE_MAP, upgradeCost } from './data/upgrades';
 import { AI_TIERS, aiTier } from './data/ai';
 import { STAGES, stageDef } from './data/stages';
 import { EVENTS } from './data/events';
+import { DEFAULT_STRATEGY } from './data/strategies';
 import {
   computeDerived, failChance, insightFor, isProjectUnlocked, launchBonus, projectCost, projectDevTime, projectUsersAt, projectVersion, projectXpAt,
 } from './calc';
@@ -20,11 +21,12 @@ import {
 /** 엔진이 UI에 알리는 신호 */
 export type Signal =
   | { type: 'income'; amount: number }
-  | { type: 'projectStart'; projectId: string }
-  | { type: 'projectComplete'; projectId: string; version: number; money: number; users: number; xp: number }
-  | { type: 'bug'; projectId: string }
+  | { type: 'projectStart'; projectId: string; strategy: DevStrategy }
+  | { type: 'projectComplete'; projectId: string; version: number; money: number; users: number; xp: number; strategy: DevStrategy; bugged: boolean }
+  | { type: 'bug'; projectId: string; cost: number }
   | { type: 'levelUp'; level: number }
   | { type: 'event'; def: GameEventDef; money?: number; users?: number }
+  | { type: 'eventChoice'; def: GameEventDef }
   | { type: 'upgrade'; id: UpgradeId; level: number }
   | { type: 'ai'; tier: number }
   | { type: 'stage'; stage: number }
@@ -49,6 +51,7 @@ export function createInitialState(now = Date.now()): GameState {
     level: 1,
     xp: 0,
     projectLevels: {},
+    projectStrategy: {},
     activeDevs: [],
     upgrades: { pc: 0, monitor: 0, internet: 0, server: 0, automation: 0, team: 0 },
     aiTier: 1,
@@ -143,8 +146,8 @@ function addUsers(state: GameState, amount: number): GameState {
   return { ...state, users: Math.max(0, users) };
 }
 
-function pickEvent(state: GameState): GameEventDef | null {
-  const pool = EVENTS.filter((e) => (e.minLevel ?? 1) <= state.level);
+function pickEvent(state: GameState, allowChoice = true): GameEventDef | null {
+  const pool = EVENTS.filter((e) => (e.minLevel ?? 1) <= state.level && (allowChoice || !e.choices));
   const total = pool.reduce((s, e) => s + e.weight, 0);
   let r = Math.random() * total;
   for (const e of pool) {
@@ -181,11 +184,71 @@ function applyEvent(state: GameState, def: GameEventDef, now: number, signals: S
   return next;
 }
 
+/**
+ * 선택형 이벤트에서 고른 선택지를 실제 상태에 반영한다.
+ * gamble 이 있으면 확률로 성공/실패 결과가 갈린다.
+ */
+export function applyEventChoice(
+  state: GameState,
+  def: GameEventDef,
+  choiceId: string,
+  now: number,
+): TickResult & { choice: EventChoiceDef | null; failed: boolean } {
+  const signals: Signal[] = [];
+  const choice = def.choices?.find((c) => c.id === choiceId) ?? null;
+  if (!choice) return { state, signals, choice: null, failed: false };
+
+  const failed = !!choice.gamble && Math.random() >= choice.gamble.chance;
+  const outcome = failed ? choice.gamble! : choice;
+
+  let next = state;
+  const d = computeDerived(next, now);
+  let money: number | undefined;
+  let users: number | undefined;
+
+  if (outcome.moneySeconds) {
+    // 최소 금액을 두어 초반에도 선택이 체감되게 한다
+    const base = Math.max(Math.abs(d.incomePerSec * outcome.moneySeconds), 300);
+    money = Math.round(outcome.moneySeconds > 0 ? base : -Math.min(base, next.money));
+    next = { ...next, money: Math.max(0, next.money + money) };
+    if (money > 0) {
+      next = { ...next, runEarned: next.runEarned + money };
+      next = withStats(next, { totalEarned: next.stats.totalEarned + money });
+    } else {
+      next = withStats(next, { totalSpent: next.stats.totalSpent - money });
+    }
+  }
+  if (outcome.usersPct) {
+    users = Math.round(Math.max(next.users * Math.abs(outcome.usersPct), 5)) * Math.sign(outcome.usersPct);
+    if (users > 0) next = addUsers(next, users);
+    else next = { ...next, users: Math.max(0, next.users + users) };
+  }
+  if (outcome.effect) {
+    const effect: ActiveEffect = {
+      eventId: def.id,
+      icon: def.icon,
+      title: def.title,
+      kind: outcome.effect.kind,
+      mult: outcome.effect.mult,
+      endsAt: now + outcome.effect.duration * 1000,
+    };
+    next = { ...next, effects: [...next.effects.filter((e) => e.eventId !== def.id), effect] };
+  }
+  next = withStats(next, { eventsTriggered: next.stats.eventsTriggered + 1 });
+  signals.push({ type: 'event', def, money, users });
+  return { state: next, signals, choice, failed };
+}
+
 export interface TickOptions {
   /** 오프라인 시뮬레이션 여부: 이벤트/플레이타임 비활성 */
   offline?: boolean;
   /** 오프라인 수익 배율 */
   incomeMult?: number;
+  /**
+   * 선택형 이벤트를 뽑아도 되는지.
+   * 이미 선택 창이 떠 있으면 false 로 넘겨 자동 이벤트만 나오게 한다.
+   */
+  allowChoiceEvents?: boolean;
 }
 
 /** dt 초만큼 게임을 진행시킨다 */
@@ -221,27 +284,39 @@ export function tick(state: GameState, dt: number, now: number, opts: TickOption
       const def = PROJECT_MAP[dev.projectId];
       if (!def) continue;
       const version = projectVersion(next, dev.projectId);
-      const time = projectDevTime(def, version);
+      const strategy = dev.strategy ?? DEFAULT_STRATEGY;
+      const time = projectDevTime(def, version, strategy);
       let progress = dev.progress + (d.devSpeed / time) * dt;
       let bugged = dev.bugged;
       if (progress >= 1) {
-        if (!bugged && Math.random() < failChance(def, d.successBonus)) {
+        if (!bugged && Math.random() < failChance(def, d.successBonus, strategy)) {
           progress = 1 - BUG_PROGRESS_PENALTY;
           bugged = true;
-          signals.push({ type: 'bug', projectId: dev.projectId });
+          // 긴급 대응 비용 — 빠르게 밀어붙인 선택에 실제 청구서를 보낸다
+          const fixCost = Math.min(
+            next.money,
+            Math.round(projectCost(def, version, d.costMult, strategy) * BUG_FIX_COST_RATE),
+          );
+          if (fixCost > 0) {
+            next = { ...next, money: next.money - fixCost };
+            next = withStats(next, { totalSpent: next.stats.totalSpent + fixCost });
+          }
+          signals.push({ type: 'bug', projectId: dev.projectId, cost: fixCost });
           remaining.push({ ...dev, progress, bugged });
           continue;
         }
         // 완성 & 출시
         const newVersion = version + 1;
-        const bonus = launchBonus(def, newVersion);
-        const users = projectUsersAt(def, newVersion);
-        const xp = projectXpAt(def, newVersion);
+        // 버그를 겪은 출시는 화제성이 떨어진다
+        const bonus = Math.round(launchBonus(def, newVersion, strategy) * (bugged ? BUGGED_LAUNCH_PENALTY : 1));
+        const users = projectUsersAt(def, newVersion, strategy);
+        const xp = projectXpAt(def, newVersion, strategy);
         next = {
           ...next,
           money: next.money + bonus,
           runEarned: next.runEarned + bonus,
           projectLevels: { ...next.projectLevels, [def.id]: newVersion },
+          projectStrategy: { ...next.projectStrategy, [def.id]: strategy },
         };
         next = addUsers(next, users);
         next = withStats(next, {
@@ -249,7 +324,7 @@ export function tick(state: GameState, dt: number, now: number, opts: TickOption
           projectsCompleted: next.stats.projectsCompleted + 1,
           bugsFixed: next.stats.bugsFixed + (bugged ? 1 : 0),
         });
-        signals.push({ type: 'projectComplete', projectId: def.id, version: newVersion, money: bonus, users, xp });
+        signals.push({ type: 'projectComplete', projectId: def.id, version: newVersion, money: bonus, users, xp, strategy, bugged });
         next = grantXp(next, xp, signals);
         continue;
       }
@@ -263,9 +338,10 @@ export function tick(state: GameState, dt: number, now: number, opts: TickOption
     const hasProject = Object.values(next.projectLevels).some((v) => v > 0);
     const elapsed = (now - next.lastEventAt) / 1000;
     if (hasProject && elapsed > nextEventIntervalCached(next)) {
-      const def = pickEvent(next);
+      const def = pickEvent(next, opts.allowChoiceEvents !== false);
       next = { ...next, lastEventAt: now };
-      if (def) next = applyEvent(next, def, now, signals);
+      if (def?.choices?.length) signals.push({ type: 'eventChoice', def });
+      else if (def) next = applyEvent(next, def, now, signals);
     }
   }
 
@@ -319,7 +395,7 @@ function nextEventIntervalCached(state: GameState): number {
 
 // ───────────── 액션 ─────────────
 
-export function startProject(state: GameState, projectId: string, now: number): TickResult {
+export function startProject(state: GameState, projectId: string, now: number, strategy: DevStrategy = DEFAULT_STRATEGY): TickResult {
   const signals: Signal[] = [];
   const def = PROJECT_MAP[projectId];
   if (!def) return { state, signals: [{ type: 'error', message: '존재하지 않는 프로젝트입니다.' }] };
@@ -327,15 +403,15 @@ export function startProject(state: GameState, projectId: string, now: number): 
   if (state.activeDevs.some((a) => a.projectId === projectId)) return { state, signals: [{ type: 'error', message: '이미 개발 중인 프로젝트입니다.' }] };
   const d = computeDerived(state, now);
   if (state.activeDevs.length >= d.slots) return { state, signals: [{ type: 'error', message: '동시 개발 슬롯이 부족합니다. 모니터를 업그레이드하세요.' }] };
-  const cost = projectCost(def, projectVersion(state, projectId), d.costMult);
+  const cost = projectCost(def, projectVersion(state, projectId), d.costMult, strategy);
   if (state.money < cost) return { state, signals: [{ type: 'error', message: '자금이 부족합니다.' }] };
   let next: GameState = {
     ...state,
     money: state.money - cost,
-    activeDevs: [...state.activeDevs, { projectId, progress: 0, bugged: false, startedAt: now }],
+    activeDevs: [...state.activeDevs, { projectId, progress: 0, bugged: false, startedAt: now, strategy }],
   };
   next = withStats(next, { totalSpent: next.stats.totalSpent + cost });
-  signals.push({ type: 'projectStart', projectId });
+  signals.push({ type: 'projectStart', projectId, strategy });
   return { state: next, signals };
 }
 
@@ -344,7 +420,7 @@ export function cancelProject(state: GameState, projectId: string): TickResult {
   if (!dev) return { state, signals: [] };
   const def = PROJECT_MAP[projectId];
   const d = computeDerived(state);
-  const refund = Math.round(projectCost(def, projectVersion(state, projectId), d.costMult) * 0.5);
+  const refund = Math.round(projectCost(def, projectVersion(state, projectId), d.costMult, dev.strategy) * 0.5);
   return {
     state: { ...state, money: state.money + refund, activeDevs: state.activeDevs.filter((a) => a.projectId !== projectId) },
     signals: [],

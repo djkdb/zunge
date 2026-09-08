@@ -1,4 +1,4 @@
-import type { GameState, UpgradeId } from './types';
+import type { DevStrategy, GameState, UpgradeId } from './types';
 import { SAVE_KEY, SAVE_VERSION } from './constants';
 import { createInitialState } from './engine';
 import { PROJECT_MAP } from './data/projects';
@@ -7,6 +7,7 @@ import { AI_TIERS } from './data/ai';
 import { STAGES } from './data/stages';
 import { ACHIEVEMENTS } from './data/achievements';
 import { TUTORIALS } from './data/tutorials';
+import { DEFAULT_STRATEGY, isDevStrategy } from './data/strategies';
 
 const ACHIEVEMENT_IDS = new Set(ACHIEVEMENTS.map((a) => a.id));
 const TUTORIAL_IDS = new Set(TUTORIALS.map((t) => t.id));
@@ -45,11 +46,20 @@ export function sanitize(raw: unknown, now = Date.now()): GameState {
           progress: num(a.progress, 0, 0, 0.999),
           bugged: bool(a.bugged, false),
           startedAt: num(a.startedAt, now),
+          // 전략이 없던 시절의 저장본은 STABLE 로 이어받는다
+          strategy: isDevStrategy(a.strategy) ? a.strategy : DEFAULT_STRATEGY,
         }))
     : [];
   // 중복 제거
   const seen = new Set<string>();
   const dedupedDevs = activeDevs.filter((a) => (seen.has(a.projectId) ? false : (seen.add(a.projectId), true)));
+
+  const projectStrategy: Record<string, DevStrategy> = {};
+  if (r.projectStrategy && typeof r.projectStrategy === 'object') {
+    for (const [id, v] of Object.entries(r.projectStrategy as Record<string, unknown>)) {
+      if (PROJECT_MAP[id] && isDevStrategy(v)) projectStrategy[id] = v;
+    }
+  }
 
   const effects = Array.isArray(r.effects)
     ? r.effects
@@ -76,6 +86,7 @@ export function sanitize(raw: unknown, now = Date.now()): GameState {
     level: Math.floor(num(r.level, 1, 1, 100)),
     xp: num(r.xp, 0),
     projectLevels,
+    projectStrategy,
     activeDevs: dedupedDevs,
     upgrades,
     aiTier: Math.floor(num(r.aiTier, 1, 1, AI_TIERS.length)),

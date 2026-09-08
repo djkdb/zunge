@@ -5,7 +5,7 @@
  * `npm run extract-zun -- <시트경로>` 로 레퍼런스 시트에서 뽑아낸다.
  * 번호는 레퍼런스 시트의 칸 번호를 그대로 따른다.
  */
-import type { Mood } from '../types';
+import type { DevStrategy, Mood } from '../types';
 
 export type ZunPose =
   // 1행
@@ -153,8 +153,30 @@ export const UI_POSE = {
 } as const satisfies Record<string, ZunPose>;
 
 /** 방 안에서 현재 게임 상태에 맞는 포즈를 고른다 */
-export function roomPose(mood: Mood, typing: boolean, bugged: boolean): ZunPose {
+/**
+ * 개발 전략별 ZUN 포즈.
+ * FAST 는 뛰고, STABLE 은 생각하고, QUALITY 는 아이디어를 떠올린다.
+ */
+export const STRATEGY_POSE: Record<DevStrategy, ZunPose> = {
+  fast: 'dash',
+  stable: 'thinking',
+  quality: 'idea',
+};
+
+/**
+ * 방 안에서 개발 중일 때 전략별로 다른 모습.
+ * 책상·노트북이 함께 그려진 칸은 방의 책상과 겹치므로 여기서는 쓰지 않는다.
+ */
+export const STRATEGY_ROOM_POSE: Record<DevStrategy, ZunPose> = {
+  fast: 'code',      // 태블릿을 들고 빠르게 찍어낸다
+  stable: 'notes',   // 노트에 적어가며 차근차근
+  quality: 'studying', // 책을 펴놓고 다듬는다
+};
+
+export function roomPose(mood: Mood, typing: boolean, bugged: boolean, strategy?: DevStrategy): ZunPose {
   if (bugged) return ROOM_BUG_POSE;
-  if (typing && (mood === 'focus' || mood === 'idle')) return ROOM_CODING_POSE;
+  if (typing && (mood === 'focus' || mood === 'idle')) {
+    return strategy ? STRATEGY_ROOM_POSE[strategy] : ROOM_CODING_POSE;
+  }
   return ROOM_POSE[mood];
 }

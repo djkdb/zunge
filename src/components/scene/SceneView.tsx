@@ -12,6 +12,7 @@ import { GoldenBugOverlay, SceneActions } from './SceneActions';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Badge } from '../ui/Badge';
 import { Icon } from '../ui/Icon';
+import { strategyDef } from '../../game/data/strategies';
 import type { Mood } from '../../game/types';
 
 const FLOAT_TONE: Record<string, string> = {
@@ -51,6 +52,8 @@ export function SceneView({ compact = false, desktop = false, onGoProjects }: { 
   const st = stageDef(stage);
   const typing = activeDevs.length > 0;
   const bugged = activeDevs.some((a) => a.bugged);
+  // 가장 먼저 착수한 프로젝트의 전략을 방 안 포즈에 쓴다
+  const strategy = activeDevs[0]?.strategy;
   const pets = useMemo(() => unlockedPets(level).map((p) => p.id), [level]);
 
   // 말풍선 라인 회전
@@ -76,7 +79,7 @@ export function SceneView({ compact = false, desktop = false, onGoProjects }: { 
 
   return (
     <div className={`relative w-full overflow-hidden ${compact ? 'aspect-[16/7]' : 'aspect-[16/10]'} bg-navy-deep select-none`}>
-      <RoomScene stage={stage} mood={mood} typing={typing} bugged={bugged} aiTier={aiT} aiColor={ai.color} teamCount={team} pets={pets} zoom={zoom} />
+      <RoomScene stage={stage} mood={mood} typing={typing} bugged={bugged} strategy={strategy} aiTier={aiT} aiColor={ai.color} teamCount={team} pets={pets} zoom={zoom} />
 
       {/* 탭 영역 (ZUN) */}
       <button
@@ -166,6 +169,9 @@ export function SceneView({ compact = false, desktop = false, onGoProjects }: { 
                   <div className="flex min-w-0 items-center gap-1.5 text-xs font-bold text-ink">
                     <span>{def.icon}</span>
                     <span className="truncate">{def.name}{v > 0 ? ` v${v + 1}` : ''}</span>
+                    <span className="text-pixel shrink-0 text-[10px]" style={{ color: strategyDef(dev.strategy).color }}>
+                      {strategyDef(dev.strategy).name}
+                    </span>
                     {dev.bugged && <Badge tone="rose"><span className="flex items-center gap-1"><Icon name="bug" size={11} />버그 수정 중</span></Badge>}
                   </div>
                   <div className="tnum shrink-0 text-[11px] font-bold text-ink-soft">

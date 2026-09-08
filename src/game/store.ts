@@ -1,12 +1,13 @@
-import type { BuyMode, GameState, LogEntry, Mood, OfflineReport, Settings, UpgradeId } from './types';
+import type { BuyMode, DevStrategy, GameEventDef, GameState, LogEntry, Mood, OfflineReport, Settings, UpgradeId } from './types';
 import {
   AUTOSAVE_MS, GOLDEN_LIFETIME_SEC, GOLDEN_MAX_INTERVAL_SEC, GOLDEN_MIN_INTERVAL_SEC, OFFLINE_THRESHOLD_SEC, TICK_MS,
 } from './constants';
 import { createStore } from './createStore';
 import {
   buyAi, buyStage, buyUpgrade, cancelProject, catchGolden, claimDaily, createInitialState, dailyAvailable, markStageSeen,
-  markTutorialSeen, prestige, setAutoDev, startProject, tapZun, tick, updateSettings, useBoost, type Signal,
+  markTutorialSeen, prestige, setAutoDev, startProject, tapZun, tick, updateSettings, useBoost, applyEventChoice, type Signal,
 } from './engine';
+import { strategyDef } from './data/strategies';
 import { TUTORIAL_MAP, pendingTutorial } from './data/tutorials';
 import { clearSave, exportSave, importSave, loadGame, saveGame } from './save';
 import { simulateOffline } from './offline';
@@ -55,6 +56,10 @@ export interface GoldenBug {
 
 export interface UiState {
   mood: Mood;
+  /** 전략 선택 창을 띄운 프로젝트 id */
+  strategyFor: string | null;
+  /** 선택을 기다리는 이벤트 */
+  eventChoice: GameEventDef | null;
   logs: LogEntry[];
   toasts: Toast[];
   floats: FloatingText[];
@@ -74,6 +79,8 @@ export interface UiState {
 
 export const uiStore = createStore<UiState>({
   mood: 'idle',
+  strategyFor: null,
+  eventChoice: null,
   logs: [],
   toasts: [],
   floats: [],
@@ -169,8 +176,10 @@ function handleSignals(signals: Signal[], now: number): void {
       }
       case 'projectStart': {
         const p = PROJECT_MAP[s.projectId];
-        pushLog('🛠️', `${p.name} 개발을 시작했습니다.`);
-        setMood('focus', 1200);
+        const st = strategyDef(s.strategy);
+        pushLog('🛠️', `${p.name} 개발 시작 — ${st.name} (${st.tagline})`);
+        // 어떤 전략을 골랐는지 ZUN의 표정으로도 알려준다
+        setMood(s.strategy === 'fast' ? 'focus' : s.strategy === 'quality' ? 'shock' : 'confident', 1600);
         sfx.tap();
         break;
       }
@@ -182,15 +191,24 @@ function handleSignals(signals: Signal[], now: number): void {
         pushFloat(`+${formatMoney(s.money)}`, 'money', 50, 40);
         pushFloat(`+${formatUsers(s.users)} 사용자`, 'users', 60, 52);
         pushFloat(`+${s.xp} XP`, 'xp', 40, 58);
-        setMood(s.version >= 3 || p.tier >= 3 ? 'shock' : 'happy', 3000);
+        // 큰 성공이면 자신만만하게, 평범하면 기쁘게
+        setMood(s.version >= 3 || p.tier >= 3 ? 'confident' : 'happy', 3000);
         sfx.complete();
         break;
       }
       case 'bug': {
         const p = PROJECT_MAP[s.projectId];
-        pushLog('🐛', `${p.name}에서 버그 발생! 수정 중...`, 'bad');
-        pushToast('🐛', '버그 발생!', `${p.name} 출시 직전에 버그가 발견됐습니다. ZUN이 멘붕에 빠졌습니다.`, 'bad', 3500);
-        pushFloat('🐛 BUG!', 'bad', 45, 45);
+        pushLog('🐛', `${p.name}에서 버그 발생! 수정 중...${s.cost > 0 ? ` (대응 비용 -${formatMoney(s.cost)})` : ''}`, 'bad');
+        pushToast(
+          '🐛',
+          '버그 발생!',
+          s.cost > 0
+            ? `${p.name} 출시 직전에 버그가 터졌습니다. 긴급 대응 비용 -${formatMoney(s.cost)}`
+            : `${p.name} 출시 직전에 버그가 발견됐습니다. ZUN이 멘붕에 빠졌습니다.`,
+          'bad',
+          3500,
+        );
+        pushFloat(s.cost > 0 ? `-${formatMoney(s.cost)}` : '🐛 BUG!', 'bad', 45, 45);
         setMood('meltdown', 3500);
         sfx.error();
         break;
@@ -200,6 +218,13 @@ function handleSignals(signals: Signal[], now: number): void {
         uiStore.set((u) => ({ ...u, levelUpTo: s.level }));
         setMood('confident', 4000);
         sfx.levelUp();
+        break;
+      }
+      case 'eventChoice': {
+        // 자동으로 처리하지 않고 플레이어에게 묻는다
+        uiStore.set((u) => ({ ...u, eventChoice: s.def }));
+        setMood(s.def.tone === 'bad' ? 'panic' : 'shock', 2500);
+        sfx.event(s.def.tone !== 'bad');
         break;
       }
       case 'event': {
@@ -288,10 +313,47 @@ function handleSignals(signals: Signal[], now: number): void {
 
 // ───────────── 액션 ─────────────
 export const actions = {
-  startProject(id: string): void {
-    const r = startProject(gameStore.get(), id, Date.now());
+  /** 전략 선택 창을 연다 (실제 착수는 confirmStrategy 에서) */
+  openStrategy(id: string): void {
+    uiStore.set((u) => ({ ...u, strategyFor: id }));
+  },
+  closeStrategy(): void {
+    uiStore.set((u) => ({ ...u, strategyFor: null }));
+  },
+  /** 전략을 골라 실제로 착수한다 */
+  confirmStrategy(id: string, strategy: DevStrategy): void {
+    uiStore.set((u) => ({ ...u, strategyFor: null }));
+    actions.startProject(id, strategy);
+  },
+  startProject(id: string, strategy: DevStrategy = 'stable'): void {
+    const r = startProject(gameStore.get(), id, Date.now(), strategy);
     gameStore.set(r.state);
     handleSignals(r.signals, Date.now());
+    refreshBaseMood();
+  },
+  /** 선택형 이벤트에서 하나를 고른다 */
+  resolveEventChoice(choiceId: string): void {
+    const def = uiStore.get().eventChoice;
+    if (!def) return;
+    uiStore.set((u) => ({ ...u, eventChoice: null }));
+    const now = Date.now();
+    const { state, signals, choice, failed } = applyEventChoice(gameStore.get(), def, choiceId, now);
+    gameStore.set(state);
+    if (!choice) return;
+
+    // 금액·사용자 변화 연출(플로팅 숫자)은 event 시그널이 처리한다
+    for (const sig of signals) {
+      if (sig.type !== 'event') continue;
+      if (sig.money) pushFloat(`${sig.money > 0 ? '+' : ''}${formatMoney(sig.money)}`, sig.money > 0 ? 'money' : 'bad', 50, 35);
+      if (sig.users) pushFloat(`${sig.users > 0 ? '+' : ''}${formatUsers(sig.users)}`, sig.users > 0 ? 'users' : 'bad', 55, 50);
+    }
+
+    const result = failed && choice.gamble ? choice.gamble.failText : choice.detail;
+    const tone = failed ? 'bad' : choice.tone;
+    pushLog(def.icon, `${def.title} — ${choice.label}: ${result}`, tone);
+    pushToast(def.icon, `${def.title} · ${choice.label}`, result, tone, 4200);
+    setMood(tone === 'bad' ? 'panic' : tone === 'good' ? 'shock' : 'confident', 2600);
+    sfx.event(tone !== 'bad');
     refreshBaseMood();
   },
   cancelProject(id: string): void {
@@ -416,6 +478,7 @@ export const actions = {
     uiStore.set((u) => ({
       ...u, logs: [], toasts: [], floats: [], offlineReport: null, levelUpTo: null,
       stageIntro: null, tutorial: null, tutorialStep: 0, dailyOpen: false, prestigeResult: null, golden: null, mood: 'idle',
+      strategyFor: null, eventChoice: null,
     }));
     pushLog('🌱', '새로운 시작! ZUN의 자취방에서 다시 출발합니다.');
     save();
@@ -534,7 +597,10 @@ export function bootGame(): void {
       applyOffline(t);
       return;
     }
-    const r = tick(gameStore.get(), Math.min(dtSec, 5), t);
+    // 선택 창이 이미 떠 있으면 새 선택형 이벤트는 뽑지 않는다
+    const r = tick(gameStore.get(), Math.min(dtSec, 5), t, {
+      allowChoiceEvents: uiStore.get().eventChoice === null,
+    });
     gameStore.set(r.state);
     handleSignals(r.signals, t);
     refreshBaseMood();

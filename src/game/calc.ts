@@ -1,4 +1,4 @@
-import type { Derived, GameState, ProjectDef } from './types';
+import type { Derived, DevStrategy, GameState, ProjectDef } from './types';
 import {
   ACHIEVEMENT_INCOME_PER, DEV_SPEED_PER_LEVEL, INSIGHT_DEV_PER, INSIGHT_INCOME_PER,
   INSIGHT_DIVISOR, INSIGHT_POW, OFFLINE_BASE_CAP_HOURS, OFFLINE_BASE_EFFICIENCY,
@@ -9,6 +9,15 @@ import { PROJECTS } from './data/projects';
 import { UPGRADE_EFFECT } from './data/upgrades';
 import { aiTier } from './data/ai';
 import { stageDef } from './data/stages';
+import { strategyDef } from './data/strategies';
+
+/**
+ * 전략 배율.
+ * strategy 를 넘기지 않으면 1배 — 전략을 고르기 전(카드에 보여주는 기본 수치)에 쓴다.
+ */
+function mult(strategy: DevStrategy | undefined, key: 'timeMult' | 'riskMult' | 'costMult' | 'incomeMult' | 'usersMult' | 'xpMult'): number {
+  return strategy ? strategyDef(strategy)[key] : 1;
+}
 
 function effectMult(state: GameState, kind: 'income' | 'users' | 'devSpeed', now: number): number {
   let m = 1;
@@ -22,36 +31,36 @@ export function projectVersion(state: GameState | Record<string, number>, id: st
 }
 
 /** 다음 버전 개발 비용 */
-export function projectCost(def: ProjectDef, version: number, costMult = 1): number {
+export function projectCost(def: ProjectDef, version: number, costMult = 1, strategy?: DevStrategy): number {
   const base = version === 0 ? def.cost : (def.cost + 500) * Math.pow(PROJECT_VERSION_COST_MULT, version);
-  return Math.round(base * costMult);
+  return Math.round(base * costMult * mult(strategy, 'costMult'));
 }
 
-export function projectDevTime(def: ProjectDef, version: number): number {
-  return def.devTime * Math.pow(PROJECT_VERSION_TIME_MULT, version);
+export function projectDevTime(def: ProjectDef, version: number, strategy?: DevStrategy): number {
+  return def.devTime * Math.pow(PROJECT_VERSION_TIME_MULT, version) * mult(strategy, 'timeMult');
 }
 
 /** 특정 버전(1 이상)이 주는 초당 수익 */
-export function projectIncomeAt(def: ProjectDef, version: number): number {
+export function projectIncomeAt(def: ProjectDef, version: number, strategy?: DevStrategy): number {
   if (version <= 0) return 0;
-  return def.income * Math.pow(PROJECT_VERSION_INCOME_MULT, version - 1);
+  return def.income * Math.pow(PROJECT_VERSION_INCOME_MULT, version - 1) * mult(strategy, 'incomeMult');
 }
 
-export function projectUsersAt(def: ProjectDef, version: number): number {
-  return Math.round(def.users * Math.pow(PROJECT_VERSION_USERS_MULT, version - 1));
+export function projectUsersAt(def: ProjectDef, version: number, strategy?: DevStrategy): number {
+  return Math.round(def.users * Math.pow(PROJECT_VERSION_USERS_MULT, version - 1) * mult(strategy, 'usersMult'));
 }
 
-export function projectGrowthAt(def: ProjectDef, version: number): number {
+export function projectGrowthAt(def: ProjectDef, version: number, strategy?: DevStrategy): number {
   if (version <= 0) return 0;
-  return projectUsersAt(def, version) / USER_GROWTH_DIVISOR;
+  return projectUsersAt(def, version, strategy) / USER_GROWTH_DIVISOR;
 }
 
-export function projectXpAt(def: ProjectDef, version: number): number {
-  return Math.round(def.xp * Math.pow(PROJECT_VERSION_XP_MULT, version - 1));
+export function projectXpAt(def: ProjectDef, version: number, strategy?: DevStrategy): number {
+  return Math.round(def.xp * Math.pow(PROJECT_VERSION_XP_MULT, version - 1) * mult(strategy, 'xpMult'));
 }
 
-export function launchBonus(def: ProjectDef, version: number): number {
-  return Math.round(projectIncomeAt(def, version) * 30);
+export function launchBonus(def: ProjectDef, version: number, strategy?: DevStrategy): number {
+  return Math.round(projectIncomeAt(def, version, strategy) * 30);
 }
 
 export function maxUsersFor(serverLevel: number): number {
@@ -93,8 +102,10 @@ export function computeDerived(state: GameState, now = Date.now()): Derived {
   for (const p of PROJECTS) {
     const v = state.projectLevels[p.id] ?? 0;
     if (v > 0) {
-      projectIncomeBase += projectIncomeAt(p, v);
-      growthBase += projectGrowthAt(p, v);
+      // 마지막으로 출시한 버전을 어떤 전략으로 만들었는지가 계속 수익에 반영된다
+      const st = state.projectStrategy?.[p.id];
+      projectIncomeBase += projectIncomeAt(p, v, st);
+      growthBase += projectGrowthAt(p, v, st);
     }
   }
   const userFactor = 1 + Math.log10(1 + state.users) * USER_INCOME_LOG_FACTOR;
@@ -131,6 +142,6 @@ export function isProjectUnlocked(state: GameState, def: ProjectDef): boolean {
 }
 
 /** 프로젝트 실패 확률 */
-export function failChance(def: ProjectDef, successBonus: number): number {
-  return Math.max(0, def.risk * (1 - successBonus));
+export function failChance(def: ProjectDef, successBonus: number, strategy?: DevStrategy): number {
+  return Math.max(0, Math.min(0.9, def.risk * (1 - successBonus) * mult(strategy, 'riskMult')));
 }

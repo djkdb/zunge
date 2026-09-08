@@ -35,6 +35,10 @@ export const PROJECT_VERSION_TIME_MULT = 1.15;
 
 /** 버그 발생 시 진행도가 되돌아가는 비율 */
 export const BUG_PROGRESS_PENALTY = 0.35;
+/** 버그를 겪고 나온 버전은 출시 보너스가 깎인다 (버그를 감수하는 선택에 실제 대가를 준다) */
+export const BUGGED_LAUNCH_PENALTY = 0.6;
+/** 버그가 터지면 즉시 무는 긴급 대응 비용 — 해당 버전 개발비 기준 */
+export const BUG_FIX_COST_RATE = 0.3;
 
 export const EVENT_MIN_INTERVAL_SEC = 55;
 export const EVENT_MAX_INTERVAL_SEC = 110;

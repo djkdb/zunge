@@ -8,7 +8,8 @@ export type IconName =
   | 'play' | 'arrow-up' | 'lock' | 'check' | 'bolt' | 'coin' | 'users' | 'gift'
   | 'target' | 'trophy' | 'chart' | 'clock' | 'sparkle' | 'bug' | 'plus'
   | 'monitor' | 'display' | 'wifi' | 'server' | 'loop' | 'team' | 'building'
-  | 'download' | 'upload' | 'trash' | 'sound-on' | 'sound-off' | 'chevron-right';
+  | 'download' | 'upload' | 'trash' | 'sound-on' | 'sound-off' | 'chevron-right'
+  | 'rocket' | 'shield' | 'gem' | 'arrow-right';
 
 const P: Record<IconName, string> = {
   home: 'M3 10.6 12 3.5l9 7.1M5.4 9.4V20h13.2V9.4',
@@ -45,6 +46,10 @@ const P: Record<IconName, string> = {
   'sound-on': 'M4 9.5h3.5L12 5.5v13L7.5 14.5H4zM15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11',
   'sound-off': 'M4 9.5h3.5L12 5.5v13L7.5 14.5H4zM16 9.5l5 5M21 9.5l-5 5',
   'chevron-right': 'M9.5 5.5 16 12l-6.5 6.5',
+  rocket: 'M12 2.8c3.2 2.3 5 5.7 5 9.4v3.3l-2.4 2.2H9.4L7 15.5v-3.3c0-3.7 1.8-7.1 5-9.4ZM12 11.6a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2ZM7 13.5 4.2 16v3.4l2.9-1.5M17 13.5l2.8 2.5v3.4l-2.9-1.5M10.2 20.2 12 22.5l1.8-2.3',
+  shield: 'M12 3.2 5 6v5.5c0 4 2.9 7.6 7 9.3 4.1-1.7 7-5.3 7-9.3V6l-7-2.8ZM9 12l2.2 2.4L15.3 10',
+  gem: 'M7.5 3.5h9l4 5.5L12 20.5 3.5 9l4-5.5ZM3.5 9h17M9 3.6 7.2 9l4.8 11.5M15 3.6 16.8 9 12 20.5',
+  'arrow-right': 'M4.5 12h14M13.5 6.5 19 12l-5.5 5.5',
 };
 
 interface Props {

@@ -1,6 +1,6 @@
 import { memo, useId } from 'react';
 import { ZunRoomFigure } from './ZunSprite';
-import type { Mood } from '../../game/types';
+import type { DevStrategy, Mood } from '../../game/types';
 import { PixelSprite } from './PixelSprite';
 import { AiRobot } from './AiRobot';
 import { PET_SPRITES } from './sprites';
@@ -18,6 +18,8 @@ interface Props {
   aiColor: string;
   /** 버그 수정 중인지 — 포즈 선택에 쓴다 */
   bugged?: boolean;
+  /** 지금 개발 중인 프로젝트의 전략 — 개발 중 포즈를 바꾼다 */
+  strategy?: DevStrategy;
   teamCount: number;
   pets: string[];
   /**
@@ -77,12 +79,13 @@ const PET_SPOTS: [number, number, number][] = [
  * 발밑(ZUN_BASE_Y)을 기준점으로 잡고, 책상 상판 아래는 잘라 책상 뒤에 있는 것처럼 보이게 한다.
  * 포즈별 움직임은 ZunSprite 안에서 결정된다.
  */
-function Zun({ mood, typing, bugged }: { mood: Mood; typing: boolean; bugged: boolean }) {
+function Zun({ mood, typing, bugged, strategy }: { mood: Mood; typing: boolean; bugged: boolean; strategy?: DevStrategy }) {
   return (
     <ZunRoomFigure
       mood={mood}
       typing={typing}
       bugged={bugged}
+      strategy={strategy}
       cx={ZUN_ANCHOR_X}
       bottom={ZUN_BASE_Y}
       height={ZUN_HEIGHT}
@@ -155,7 +158,7 @@ function Pets({ pets }: { pets: string[] }) {
 }
 
 // ───────── 스테이지 ─────────
-function Stage1({ mood, typing, bugged, theme, uid }: { mood: Mood; typing: boolean; bugged: boolean; theme: SceneTheme; uid: string }) {
+function Stage1({ mood, typing, bugged, strategy, theme, uid }: { mood: Mood; typing: boolean; bugged: boolean; strategy?: DevStrategy; theme: SceneTheme; uid: string }) {
   return (
     <g>
       <Wall uid={uid} theme={theme} />
@@ -163,14 +166,14 @@ function Stage1({ mood, typing, bugged, theme, uid }: { mood: Mood; typing: bool
       <Shelf x={258} y={54} w={50} />
       <Bed x={0} y={124} />
       <Plant x={288} y={122} />
-      <Zun mood={mood} typing={typing} bugged={bugged} />
+      <Zun mood={mood} typing={typing} bugged={bugged} strategy={strategy} />
       <Workstation stage={1} uid={uid} typing={typing} lamp />
       <PcTower x={232} y={132} w={13} h={26} />
     </g>
   );
 }
 
-function Stage2({ mood, typing, bugged, team, theme, uid }: { mood: Mood; typing: boolean; bugged: boolean; team: number; theme: SceneTheme; uid: string }) {
+function Stage2({ mood, typing, bugged, strategy, team, theme, uid }: { mood: Mood; typing: boolean; bugged: boolean; strategy?: DevStrategy; team: number; theme: SceneTheme; uid: string }) {
   return (
     <g>
       <Wall uid={uid} theme={theme} />
@@ -179,7 +182,7 @@ function Stage2({ mood, typing, bugged, team, theme, uid }: { mood: Mood; typing
       <Poster2 />
       <TeamSeats count={team} max={1} typing={typing} uid={uid} />
       <Plant x={88} y={104} big />
-      <Zun mood={mood} typing={typing} bugged={bugged} />
+      <Zun mood={mood} typing={typing} bugged={bugged} strategy={strategy} />
       <Workstation stage={2} uid={uid} typing={typing} extraMonitor />
       <PcTower x={248} y={138} w={17} h={36} color="#171b2c" rgb />
       <ServerRack x={280} y={96} w={30} h={54} lights={4} />
@@ -200,7 +203,7 @@ function Poster2() {
   );
 }
 
-function Stage3({ mood, typing, bugged, team, theme, aiColor, uid }: { mood: Mood; typing: boolean; bugged: boolean; team: number; theme: SceneTheme; aiColor: string; uid: string }) {
+function Stage3({ mood, typing, bugged, strategy, team, theme, aiColor, uid }: { mood: Mood; typing: boolean; bugged: boolean; strategy?: DevStrategy; team: number; theme: SceneTheme; aiColor: string; uid: string }) {
   return (
     <g>
       <Wall uid={uid} theme={theme} />
@@ -212,14 +215,14 @@ function Stage3({ mood, typing, bugged, team, theme, aiColor, uid }: { mood: Moo
       <ServerRack x={286} y={60} w={30} h={58} lights={6} accent={aiColor} />
       <Hologram x={66} y={84} color={aiColor} />
       <TeamSeats count={team} max={2} typing={typing} dark uid={uid} />
-      <Zun mood={mood} typing={typing} bugged={bugged} />
+      <Zun mood={mood} typing={typing} bugged={bugged} strategy={strategy} />
       <Workstation stage={3} uid={uid} typing={typing} dark ultrawide />
       <PcTower x={250} y={140} w={17} h={34} color="#0b0f1e" rgb />
     </g>
   );
 }
 
-function Stage4({ mood, typing, bugged, team, theme, uid }: { mood: Mood; typing: boolean; bugged: boolean; team: number; theme: SceneTheme; uid: string }) {
+function Stage4({ mood, typing, bugged, strategy, team, theme, uid }: { mood: Mood; typing: boolean; bugged: boolean; strategy?: DevStrategy; team: number; theme: SceneTheme; uid: string }) {
   return (
     <g>
       <Wall uid={uid} theme={theme} />
@@ -227,13 +230,13 @@ function Stage4({ mood, typing, bugged, team, theme, uid }: { mood: Mood; typing
       <rect x={0} y={78} width={320} height={4} fill="#f4f6fb" />
       <ProjectBoard x={112} y={22} w={80} h={46} />
       <TeamSeats count={team} max={4} typing={typing} uid={uid} />
-      <Zun mood={mood} typing={typing} bugged={bugged} />
+      <Zun mood={mood} typing={typing} bugged={bugged} strategy={strategy} />
       <Workstation stage={4} uid={uid} typing={typing} extraMonitor />
     </g>
   );
 }
 
-function Stage5({ mood, typing, bugged, team, theme, aiColor, uid }: { mood: Mood; typing: boolean; bugged: boolean; team: number; theme: SceneTheme; aiColor: string; uid: string }) {
+function Stage5({ mood, typing, bugged, strategy, team, theme, aiColor, uid }: { mood: Mood; typing: boolean; bugged: boolean; strategy?: DevStrategy; team: number; theme: SceneTheme; aiColor: string; uid: string }) {
   return (
     <g>
       <Wall uid={uid} theme={theme} />
@@ -243,13 +246,13 @@ function Stage5({ mood, typing, bugged, team, theme, aiColor, uid }: { mood: Moo
       <PixelText x={160} y={16} text="ZUN AI" color={aiColor} scale={1.4} />
       <AiCore x={160} y={44} color={aiColor} stand={false} />
       <TeamSeats count={team} max={4} typing={typing} dark uid={uid} />
-      <Zun mood={mood} typing={typing} bugged={bugged} />
+      <Zun mood={mood} typing={typing} bugged={bugged} strategy={strategy} />
       <Workstation stage={5} uid={uid} typing={typing} dark ultrawide extraMonitor />
     </g>
   );
 }
 
-export const RoomScene = memo(function RoomScene({ stage, mood, typing, bugged = false, aiTier, aiColor, teamCount, pets, zoom = 'full' }: Props) {
+export const RoomScene = memo(function RoomScene({ stage, mood, typing, bugged = false, strategy, aiTier, aiColor, teamCount, pets, zoom = 'full' }: Props) {
   const s = Math.min(5, Math.max(1, stage));
   const theme = SCENE_THEMES[s];
   // 모바일/데스크톱 두 씬이 동시에 존재하므로 그라디언트 id를 인스턴스마다 분리한다
@@ -262,11 +265,11 @@ export const RoomScene = memo(function RoomScene({ stage, mood, typing, bugged =
       aria-label="ZUN의 개발 공간"
     >
       <SceneDefs uid={uid} theme={theme} accent={aiColor} />
-      {s === 1 && <Stage1 mood={mood} typing={typing} bugged={bugged} theme={theme} uid={uid} />}
-      {s === 2 && <Stage2 mood={mood} typing={typing} bugged={bugged} team={teamCount} theme={theme} uid={uid} />}
-      {s === 3 && <Stage3 mood={mood} typing={typing} bugged={bugged} team={teamCount} theme={theme} aiColor={aiColor} uid={uid} />}
-      {s === 4 && <Stage4 mood={mood} typing={typing} bugged={bugged} team={teamCount} theme={theme} uid={uid} />}
-      {s === 5 && <Stage5 mood={mood} typing={typing} bugged={bugged} team={teamCount} theme={theme} aiColor={aiColor} uid={uid} />}
+      {s === 1 && <Stage1 mood={mood} typing={typing} bugged={bugged} strategy={strategy} theme={theme} uid={uid} />}
+      {s === 2 && <Stage2 mood={mood} typing={typing} bugged={bugged} strategy={strategy} team={teamCount} theme={theme} uid={uid} />}
+      {s === 3 && <Stage3 mood={mood} typing={typing} bugged={bugged} strategy={strategy} team={teamCount} theme={theme} aiColor={aiColor} uid={uid} />}
+      {s === 4 && <Stage4 mood={mood} typing={typing} bugged={bugged} strategy={strategy} team={teamCount} theme={theme} uid={uid} />}
+      {s === 5 && <Stage5 mood={mood} typing={typing} bugged={bugged} strategy={strategy} team={teamCount} theme={theme} aiColor={aiColor} uid={uid} />}
       <Pets pets={pets} />
       <Glow x={ROBOT_X + 8} y={ROBOT_Y + 9} r={13} uid={uid} />
       <AiRobot tier={aiTier} color={aiColor} x={ROBOT_X} y={ROBOT_Y} working={typing} scale={1} />

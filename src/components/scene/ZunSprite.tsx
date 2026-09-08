@@ -1,5 +1,5 @@
 import { memo, useId } from 'react';
-import type { Mood } from '../../game/types';
+import type { DevStrategy, Mood } from '../../game/types';
 import {
   FULL_POSE, MOTION_CLASS, POSE_MOTION, POSE_NUMBER, ROOM_POSE, type ZunPose, bundledPoseSrc, roomPose,
 } from '../../game/data/zunPoses';
@@ -94,8 +94,8 @@ export const ZunInScene = memo(function ZunInScene({ pose, cx, bottom, height, c
 });
 
 /** 방 안에서 게임 상태에 맞는 포즈를 골라 그린다 */
-export function ZunRoomFigure(props: Omit<SceneProps, 'pose'> & { mood: Mood; typing: boolean; bugged: boolean }) {
-  const { mood, typing, bugged, ...rest } = props;
+export function ZunRoomFigure(props: Omit<SceneProps, 'pose'> & { mood: Mood; typing: boolean; bugged: boolean; strategy?: DevStrategy }) {
+  const { mood, typing, bugged, strategy, ...rest } = props;
   const source = useStore(characterStore, (s) => s.source);
   if (source === 'none' || source === 'loading') {
     return (
@@ -111,7 +111,7 @@ export function ZunRoomFigure(props: Omit<SceneProps, 'pose'> & { mood: Mood; ty
       </g>
     );
   }
-  return <ZunInScene pose={roomPose(mood, typing, bugged)} {...rest} />;
+  return <ZunInScene pose={roomPose(mood, typing, bugged, strategy)} {...rest} />;
 }
 
 // ───────────── HTML(모달·튜토리얼)용 ─────────────

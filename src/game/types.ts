@@ -72,7 +72,66 @@ export interface LevelTitleDef {
   title: string;
 }
 
+// ───────── 개발 전략 ─────────
+
+/** 프로젝트를 "어떻게" 만들지에 대한 플레이어의 선택 */
+export type DevStrategy = 'fast' | 'stable' | 'quality';
+
+export interface StrategyDef {
+  id: DevStrategy;
+  /** 화면에 크게 나오는 이름 */
+  name: string;
+  /** 한 줄 설명 */
+  tagline: string;
+  pro: string;
+  con: string;
+  /** 개발 시간 배율 */
+  timeMult: number;
+  /** 버그 확률 배율 */
+  riskMult: number;
+  /** 착수 비용 배율 */
+  costMult: number;
+  /** 출시 후 초당 수익 배율 (이 전략으로 낸 버전이 유지되는 동안 계속 적용) */
+  incomeMult: number;
+  /** 출시 시 확보 사용자 배율 */
+  usersMult: number;
+  /** 완성 경험치 배율 */
+  xpMult: number;
+  /** 강조 색 (accent 토큰 이름이 아니라 실제 색) */
+  color: string;
+}
+
 export type EventEffectKind = 'income' | 'users' | 'devSpeed';
+
+/** 선택형 이벤트의 선택지 하나 */
+export interface EventChoiceDef {
+  id: string;
+  /** Icon 컴포넌트의 아이콘 이름 */
+  icon: string;
+  label: string;
+  /** 고르면 어떻게 되는지 */
+  detail: string;
+  tone: 'good' | 'bad' | 'neutral';
+  /** 즉시 자금 = 현재 초당 수익 × 초 (음수면 지출) */
+  moneySeconds?: number;
+  /** 즉시 사용자 증감 비율 */
+  usersPct?: number;
+  /** 지속 효과 */
+  effect?: { kind: EventEffectKind; mult: number; duration: number };
+  /**
+   * 도박 선택지. chance 확률로 위 효과가 그대로 적용되고,
+   * 실패하면 fail 쪽 효과가 대신 적용된다.
+   */
+  gamble?: {
+    chance: number;
+    failText: string;
+    moneySeconds?: number;
+    usersPct?: number;
+    effect?: { kind: EventEffectKind; mult: number; duration: number };
+  };
+  /** 모달을 닫아버렸을 때 자동으로 고르는 안전한 선택지 */
+  safe?: boolean;
+}
 
 export interface GameEventDef {
   id: string;
@@ -88,6 +147,8 @@ export interface GameEventDef {
   /** 지속 효과 */
   effect?: { kind: EventEffectKind; mult: number; duration: number };
   minLevel?: number;
+  /** 있으면 자동 적용 대신 플레이어에게 선택을 묻는다 */
+  choices?: EventChoiceDef[];
 }
 
 export interface ActiveEffect {
@@ -106,6 +167,8 @@ export interface ActiveDev {
   /** 버그 수정 중 여부 */
   bugged: boolean;
   startedAt: number;
+  /** 착수할 때 고른 개발 전략 */
+  strategy: DevStrategy;
 }
 
 export type Mood = 'idle' | 'focus' | 'happy' | 'panic' | 'shock' | 'confident' | 'meltdown';
@@ -142,6 +205,11 @@ export interface GameState {
   xp: number;
   /** 프로젝트별 완성 횟수(버전) */
   projectLevels: Record<string, number>;
+  /**
+   * 프로젝트별로 "마지막에 출시한 버전을 어떤 전략으로 만들었는지".
+   * 출시 후 초당 수익과 사용자 유입에 계속 영향을 준다.
+   */
+  projectStrategy: Record<string, DevStrategy>;
   activeDevs: ActiveDev[];
   upgrades: Record<UpgradeId, number>;
   aiTier: number;

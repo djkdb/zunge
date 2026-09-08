@@ -61,7 +61,7 @@ export function HomePanel({ onTab }: { onTab: (t: Tab) => void }) {
           <Button
             size="sm"
             variant="go"
-            onClick={() => actions.startProject(quick.id)}
+            onClick={() => actions.openStrategy(quick.id)}
             sub={projectCost(quick, state.projectLevels[quick.id] ?? 0, costMult) === 0 ? '무료' : formatMoney(projectCost(quick, state.projectLevels[quick.id] ?? 0, costMult))}
           >
             <span className="flex items-center gap-1"><Icon name="play" size={10} filled />개발</span>

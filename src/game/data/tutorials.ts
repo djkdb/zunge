@@ -27,14 +27,21 @@ export const TUTORIALS: TutorialDef[] = [
         tab: 'projects',
       },
       {
+        icon: '🧭',
+        title: '② 어떻게 만들지 고른다',
+        body: '프로젝트를 고르면 FAST · STABLE · QUALITY 중에서 개발 방식을 정해. 시간, 버그 위험, 비용, 출시 수익이 전부 달라져.',
+        target: 'tab-projects',
+        tab: 'projects',
+      },
+      {
         icon: '💰',
-        title: '② 출시하면 돈이 들어온다',
+        title: '③ 출시하면 돈이 들어온다',
         body: '완성된 서비스는 사용자를 모으고 초당 수익을 만들어. 게임을 꺼둬도 계속 벌어들여!',
         target: 'stat-money',
       },
       {
         icon: '⬆️',
-        title: '③ 번 돈으로 성장한다',
+        title: '④ 번 돈으로 성장한다',
         body: '장비와 AI를 업그레이드하면 개발이 빨라지고 수익이 늘어. 그 돈으로 더 큰 프로젝트를 만드는 게 핵심 루프야.',
         target: 'tab-upgrades',
         tab: 'upgrades',
@@ -44,6 +51,40 @@ export const TUTORIALS: TutorialDef[] = [
         title: '심심할 땐 나를 눌러줘',
         body: 'ZUN을 탭하면 소소한 수익이 들어오고 개발도 조금 빨라져. 이제 첫 프로젝트를 만들러 가자!',
         tab: 'projects',
+      },
+    ],
+  },
+
+  {
+    id: 'strategy',
+    steps: [
+      {
+        icon: '🧭',
+        title: '개발 전략을 고른다',
+        body: 'FAST는 25% 빨리 끝나지만 버그 위험이 1.8배야. STABLE은 조금 느린 대신 버그가 절반이고 경험치를 더 줘.',
+        target: 'tab-projects',
+        tab: 'projects',
+      },
+      {
+        icon: '💎',
+        title: 'QUALITY는 오래 남는다',
+        body: 'QUALITY로 낸 버전은 비용이 30% 비싼 대신, 그 버전이 살아있는 내내 수익과 사용자가 25% 더 들어와. 다음 버전을 다른 전략으로 내면 그 효과는 바뀐다.',
+      },
+    ],
+  },
+
+  {
+    id: 'eventchoice',
+    steps: [
+      {
+        icon: '🎲',
+        title: '이벤트에는 선택이 있다',
+        body: '투자자, 버그, 스폰서 같은 이벤트는 선택지를 줘. 어느 쪽을 골라도 무언가는 내줘야 하니 지금 상황을 보고 정해.',
+      },
+      {
+        icon: '🍀',
+        title: '확률이 붙은 선택지',
+        body: '"성공 55%" 같은 표시가 있는 선택지는 도박이야. 성공하면 크게 벌고, 실패하면 대신 손해를 본다. 창을 닫으면 가장 안전한 선택으로 처리돼.',
       },
     ],
   },
@@ -226,6 +267,8 @@ export const TUTORIAL_MAP: Record<string, TutorialDef> = Object.fromEntries(TUTO
 
 /** 조건이 처음 참이 되는 순간 해당 튜토리얼을 재생한다 (위에서부터 하나씩) */
 export const TUTORIAL_TRIGGERS: { id: string; when: (s: GameState) => boolean }[] = [
+  { id: 'strategy', when: (s) => s.stats.projectsCompleted >= 1 },
+  { id: 'eventchoice', when: (s) => s.stats.eventsTriggered >= 2 },
   { id: 'upgrades', when: (s) => s.money >= upgradeCost(UPGRADE_MAP.pc, s.upgrades.pc) && s.stats.projectsCompleted >= 1 },
   { id: 'boost', when: (s) => s.level >= BOOST_UNLOCK_LEVEL },
   { id: 'slots', when: (s) => s.upgrades.monitor >= 1 },

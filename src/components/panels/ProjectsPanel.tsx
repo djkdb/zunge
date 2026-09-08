@@ -10,7 +10,8 @@ import { formatDuration, formatMoney, formatRate, formatUsers } from '../../game
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Icon } from '../ui/Icon';
-import type { ProjectDef } from '../../game/types';
+import type { DevStrategy, ProjectDef } from '../../game/types';
+import { strategyDef } from '../../game/data/strategies';
 
 const TIER_TONE = { 1: 'mint', 2: 'primary', 3: 'violet', 4: 'gold' } as const;
 
@@ -19,6 +20,7 @@ export function ProjectsPanel() {
   const level = useGame((s) => s.level);
   const ai = useGame((s) => s.aiTier);
   const projectLevels = useGame((s) => s.projectLevels);
+  const projectStrategy = useGame((s) => s.projectStrategy);
   const activeDevs = useGame((s) => s.activeDevs);
   const costMult = useDerived((d) => d.costMult);
   const devSpeed = useDerived((d) => d.devSpeed);
@@ -63,7 +65,7 @@ export function ProjectsPanel() {
             <Icon name="loop" size={18} className={autoDev ? 'text-mint' : 'text-ink-soft'} />
             <div>
               <div className="text-xs font-black">자동 개발 {autoDev ? 'ON' : 'OFF'}</div>
-              <div className="text-[11px] text-ink-soft">빈 슬롯에 가장 비싼 프로젝트를 알아서 착수합니다</div>
+              <div className="text-[11px] text-ink-soft">빈 슬롯에 가장 비싼 프로젝트를 STABLE 전략으로 착수합니다</div>
             </div>
           </div>
           <span className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${autoDev ? 'bg-mint' : 'bg-white/15'}`}>
@@ -84,6 +86,7 @@ export function ProjectsPanel() {
             ai={ai}
             version={projectLevels[p.id] ?? 0}
             active={activeDevs.find((a) => a.projectId === p.id)}
+            lastStrategy={projectStrategy[p.id]}
             costMult={costMult}
             devSpeed={devSpeed}
             slotsFull={activeDevs.length >= slots}
@@ -102,20 +105,23 @@ interface CardProps {
   level: number;
   ai: number;
   version: number;
-  active?: { progress: number; bugged: boolean };
+  active?: { progress: number; bugged: boolean; strategy: DevStrategy };
+  /** 마지막으로 출시한 버전을 만든 전략 */
+  lastStrategy?: DevStrategy;
   costMult: number;
   devSpeed: number;
   slotsFull: boolean;
   successBonus: number;
 }
 
-function ProjectCard({ def, index, money, level, ai, version, active, costMult, devSpeed, slotsFull, successBonus }: CardProps) {
+function ProjectCard({ def, index, money, level, ai, version, active, lastStrategy, costMult, devSpeed, slotsFull, successBonus }: CardProps) {
   const unlocked = level >= def.requiredLevel && ai >= def.requiredAi;
   const cost = projectCost(def, version, costMult);
   const nextV = version + 1;
   const time = projectDevTime(def, version) / devSpeed;
   const income = projectIncomeAt(def, nextV);
-  const curIncome = projectIncomeAt(def, version);
+  // 지금 벌고 있는 수익은 마지막 출시에 쓴 전략이 반영된 값
+  const curIncome = projectIncomeAt(def, version, lastStrategy);
   const users = projectUsersAt(def, nextV);
   const xp = projectXpAt(def, nextV);
   const fail = failChance(def, successBonus);
@@ -136,9 +142,9 @@ function ProjectCard({ def, index, money, level, ai, version, active, costMult, 
           <div className="flex flex-wrap items-center gap-1">
             <span className="truncate text-sm font-black">{def.name}</span>
             <Badge tone={TIER_TONE[def.tier]}>{TIER_LABEL[def.tier]}</Badge>
-            {version > 0 && <Badge tone="gold">v{version} 출시됨</Badge>}
           </div>
           <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-ink-soft">{def.description}</p>
+          {version > 0 && <VersionTrail version={version} strategy={lastStrategy} />}
         </div>
       </div>
 
@@ -155,6 +161,7 @@ function ProjectCard({ def, index, money, level, ai, version, active, costMult, 
             }
           />
           <Row k="사용자" v={<span className="text-[#8ab8ff]">+{formatUsers(users)}</span>} />
+          <Row k="비용" v={cost === 0 ? <span className="text-[#5ee596]">무료</span> : formatMoney(cost)} />
           <Row k="개발 시간" v={formatDuration(time)} />
           <Row k="경험치" v={<span className="text-[#b9a6ff]">+{xp} XP</span>} />
           {fail > 0 && <Row k="버그 위험" v={<span className={fail > 0.15 ? 'text-[#ff8aa1]' : 'text-ink-soft'}>{Math.round(fail * 100)}%</span>} />}
@@ -168,9 +175,14 @@ function ProjectCard({ def, index, money, level, ai, version, active, costMult, 
 
       {active ? (
         <div className="mt-auto flex items-center justify-between rounded-lg bg-primary-soft px-2.5 py-1.5">
-          <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#8ab8ff]">
+          <span className="flex min-w-0 items-center gap-1.5 text-[11px] font-bold text-[#8ab8ff]">
             <Icon name={active.bugged ? 'bug' : 'bolt'} size={13} />
-            {active.bugged ? '버그 수정 중' : '개발 중'} {Math.floor(active.progress * 100)}%
+            <span className="truncate">
+              {active.bugged ? '버그 수정 중' : '개발 중'} {Math.floor(active.progress * 100)}%
+              <span className="ml-1 text-pixel text-[10px]" style={{ color: strategyDef(active.strategy).color }}>
+                {strategyDef(active.strategy).name}
+              </span>
+            </span>
           </span>
           <button type="button" onClick={() => actions.cancelProject(def.id)} className="shrink-0 whitespace-nowrap text-[11px] font-bold text-ink-muted hover:text-[#ff8aa1]">취소 (50% 환불)</button>
         </div>
@@ -180,7 +192,7 @@ function ProjectCard({ def, index, money, level, ai, version, active, costMult, 
           className="mt-auto"
           variant={!unlocked || slotsFull ? 'neutral' : version > 0 ? 'accent' : 'go'}
           disabled={disabled}
-          onClick={() => actions.startProject(def.id)}
+          onClick={() => actions.openStrategy(def.id)}
           title={slotsFull ? '동시 개발 슬롯이 가득 찼습니다' : undefined}
           sub={!unlocked || slotsFull ? undefined : cost === 0 ? '무료' : formatMoney(cost)}
         >
@@ -197,6 +209,36 @@ function ProjectCard({ def, index, money, level, ai, version, active, costMult, 
       )}
       {unlocked && !active && !canAfford && !slotsFull && (
         <div className="text-center text-[10px] font-bold text-[#ff8aa1]">{formatMoney(cost - money)} 부족</div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 지금까지 낸 버전을 눈으로 보여준다.
+ * 다섯 개까지만 칩으로 그리고 그 이상은 숫자로 접는다.
+ */
+function VersionTrail({ version, strategy }: { version: number; strategy?: DevStrategy }) {
+  const shown = Math.min(version, 5);
+  const hidden = version - shown;
+  const st = strategy ? strategyDef(strategy) : null;
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-1">
+      {hidden > 0 && <span className="text-[10px] font-bold text-ink-muted">+{hidden}</span>}
+      {Array.from({ length: shown }, (_, i) => version - shown + i + 1).map((v) => (
+        <span
+          key={v}
+          className={`text-pixel rounded px-1 py-px text-[9px] font-bold leading-none ${
+            v === version ? 'bg-gold-soft text-[#ffd06a]' : 'bg-bg-2 text-ink-muted'
+          }`}
+        >
+          v{v}
+        </span>
+      ))}
+      {st && (
+        <span className="rounded px-1 py-px text-[9px] font-black leading-none" style={{ background: `${st.color}1f`, color: st.color }}>
+          {st.name}
+        </span>
       )}
     </div>
   );
