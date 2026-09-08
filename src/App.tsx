@@ -17,6 +17,7 @@ import { StageIntro } from './components/overlays/StageIntro';
 import { TutorialOverlay } from './components/overlays/TutorialOverlay';
 import { StrategyModal } from './components/overlays/StrategyModal';
 import { EventChoiceModal } from './components/overlays/EventChoiceModal';
+import { ConflictNotice } from './components/overlays/ConflictNotice';
 import { DailyBonusModal } from './components/overlays/DailyBonusModal';
 import { PrestigeResultModal } from './components/overlays/PrestigeResultModal';
 import { PROJECTS } from './game/data/projects';
@@ -103,6 +104,7 @@ export default function App() {
       <StrategyModal />
       <EventChoiceModal />
       <TutorialOverlay />
+      <ConflictNotice />
     </div>
   );
 }

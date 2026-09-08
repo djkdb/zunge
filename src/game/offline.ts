@@ -6,7 +6,10 @@ import { tick } from './engine';
 /** 오프라인 진행을 시뮬레이션하고 보고서를 만든다 */
 export function simulateOffline(state: GameState, now: number): { state: GameState; report: OfflineReport | null } {
   const elapsedRaw = Math.max(0, (now - state.lastSavedAt) / 1000);
-  if (elapsedRaw < OFFLINE_MIN_REPORT_SEC) return { state, report: null };
+  if (elapsedRaw <= 0) return { state, report: null };
+  // 짧게 자리를 비운 시간도 진행은 시켜야 한다.
+  // 보고서(복귀 모달)만 일정 시간 이상일 때 낸다.
+  const reportable = elapsedRaw >= OFFLINE_MIN_REPORT_SEC;
 
   const d = computeDerived(state, now);
   const cap = d.offlineCapHours * 3600;
@@ -32,7 +35,7 @@ export function simulateOffline(state: GameState, now: number): { state: GameSta
   }
 
   const moneyGained = Math.max(0, cur.money - startMoney);
-  const report: OfflineReport = {
+  const report: OfflineReport | null = !reportable ? null : {
     seconds: elapsed,
     money: moneyGained,
     users: Math.max(0, cur.users - startUsers),
@@ -42,7 +45,8 @@ export function simulateOffline(state: GameState, now: number): { state: GameSta
   cur = {
     ...cur,
     lastEventAt: now,
-    stats: { ...cur.stats, offlineEarned: cur.stats.offlineEarned + moneyGained },
+    // 자리를 비운 동안 번 돈은 보고서를 내지 않는 짧은 구간에서는 통계에 넣지 않는다
+    stats: reportable ? { ...cur.stats, offlineEarned: cur.stats.offlineEarned + moneyGained } : cur.stats,
   };
   return { state: cur, report };
 }

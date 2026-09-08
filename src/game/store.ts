@@ -9,7 +9,8 @@ import {
 } from './engine';
 import { strategyDef } from './data/strategies';
 import { TUTORIAL_MAP, pendingTutorial } from './data/tutorials';
-import { clearSave, exportSave, importSave, loadGame, saveGame } from './save';
+import { SAVE_KEY } from './constants';
+import { clearSave, exportSave, importSave, loadGame, saveGame, storedSavedAt } from './save';
 import { simulateOffline } from './offline';
 import { PROJECT_MAP } from './data/projects';
 import { UPGRADE_MAP } from './data/upgrades';
@@ -56,6 +57,8 @@ export interface GoldenBug {
 
 export interface UiState {
   mood: Mood;
+  /** 다른 탭이 같은 저장본을 이어받아 이 탭이 멈춘 상태 */
+  conflict: boolean;
   /** 전략 선택 창을 띄운 프로젝트 id */
   strategyFor: string | null;
   /** 선택을 기다리는 이벤트 */
@@ -79,6 +82,7 @@ export interface UiState {
 
 export const uiStore = createStore<UiState>({
   mood: 'idle',
+  conflict: false,
   strategyFor: null,
   eventChoice: null,
   logs: [],
@@ -116,6 +120,9 @@ let moodTimer: ReturnType<typeof setTimeout> | null = null;
  * 축하 순간이 카드 다섯 장으로 덮인다. 직전 안내를 닫고 나서 한 박자 쉰다.
  */
 const TUTORIAL_GAP_MS = 25000;
+
+/** 한 번의 tick 에 넘기는 최대 시간 — 밀린 시간은 이 단위로 나눠 따라잡는다 */
+const MAX_STEP_SEC = 5;
 let lastTutorialAt = 0;
 
 function baseMood(state: GameState): Mood {
@@ -489,7 +496,7 @@ export const actions = {
     uiStore.set((u) => ({
       ...u, logs: [], toasts: [], floats: [], offlineReport: null, levelUpTo: null,
       stageIntro: null, tutorial: null, tutorialStep: 0, dailyOpen: false, prestigeResult: null, golden: null, mood: 'idle',
-      strategyFor: null, eventChoice: null,
+      strategyFor: null, eventChoice: null, conflict: false,
     }));
     pushLog('🌱', '새로운 시작! ZUN의 자취방에서 다시 출발합니다.');
     save();
@@ -509,11 +516,29 @@ export const actions = {
   },
 };
 
+/**
+ * 이 탭이 마지막으로 저장한 시각.
+ * 저장본이 이것보다 새로우면 다른 탭이 같은 세이브를 이어받았다는 뜻이다.
+ */
+let mySavedAt = 0;
+
 function save(): boolean {
+  if (uiStore.get().conflict) return false;
+  // 다른 탭이 먼저 저장했다면 덮어쓰지 않는다.
+  // 덮어쓰면 그 탭에서 산 업그레이드·프로젝트가 조용히 사라진다.
+  const disk = storedSavedAt();
+  if (mySavedAt && disk !== null && disk > mySavedAt + 1) {
+    stopGame();
+    uiStore.set((u) => ({ ...u, conflict: true }));
+    return false;
+  }
   const now = Date.now();
   gameStore.set((s) => ({ ...s, lastSavedAt: now }));
   const ok = saveGame(gameStore.get());
-  if (ok) uiStore.set((u) => ({ ...u, lastSaveAt: now }));
+  if (ok) {
+    mySavedAt = now;
+    uiStore.set((u) => ({ ...u, lastSaveAt: now }));
+  }
   return ok;
 }
 
@@ -612,12 +637,25 @@ export function bootGame(): void {
       applyOffline(t);
       return;
     }
-    // 선택 창이 이미 떠 있으면 새 선택형 이벤트는 뽑지 않는다
-    const r = tick(gameStore.get(), Math.min(dtSec, 5), t, {
-      allowChoiceEvents: uiStore.get().eventChoice === null,
-    });
-    gameStore.set(r.state);
-    handleSignals(r.signals, t);
+    // 탭이 잠깐 멈췄다 돌아오면 밀린 시간만큼 따라잡는다.
+    // 한 번에 큰 dt 를 넘기면 개발 진행·버그 판정이 뭉개지므로 5초씩 나눠 돌린다.
+    let remain = dtSec;
+    let st = gameStore.get();
+    const signals: Signal[] = [];
+    let guard = 0;
+    while (remain > 0 && guard < 16) {
+      guard += 1;
+      const step = Math.min(MAX_STEP_SEC, remain);
+      remain -= step;
+      // 선택 창이 떠 있으면 새 선택형 이벤트는 뽑지 않는다
+      const r = tick(st, step, t - remain * 1000, {
+        allowChoiceEvents: uiStore.get().eventChoice === null && !signals.some((sig) => sig.type === 'eventChoice'),
+      });
+      st = r.state;
+      signals.push(...r.signals);
+    }
+    gameStore.set(st);
+    handleSignals(signals, t);
     refreshBaseMood();
     updateGolden(t);
     updateTutorial();
@@ -631,6 +669,15 @@ export function bootGame(): void {
     if (document.visibilityState === 'hidden') save();
   };
   document.addEventListener('visibilitychange', onHide);
+  // 다른 탭이 같은 세이브에 쓰면 즉시 알아챈다 (자동저장 주기를 기다리지 않는다)
+  window.addEventListener('storage', (e) => {
+    if (e.key !== SAVE_KEY || uiStore.get().conflict) return;
+    const disk = storedSavedAt();
+    if (mySavedAt && disk !== null && disk > mySavedAt + 1) {
+      stopGame();
+      uiStore.set((u) => ({ ...u, conflict: true }));
+    }
+  });
   window.addEventListener('beforeunload', () => save());
   window.addEventListener('pagehide', () => save());
 }

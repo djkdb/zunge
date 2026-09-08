@@ -158,6 +158,23 @@ export function loadGame(): GameState | null {
   }
 }
 
+/**
+ * 저장본의 lastSavedAt 만 읽는다.
+ * 다른 탭이 먼저 저장했는지 확인하는 용도라 전체를 파싱하지 않는다.
+ */
+export function storedSavedAt(): number | null {
+  const s = storage();
+  if (!s) return null;
+  try {
+    const raw = s.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const v = (JSON.parse(raw) as { lastSavedAt?: unknown }).lastSavedAt;
+    return typeof v === 'number' && Number.isFinite(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
 export function saveGame(state: GameState): boolean {
   const s = storage();
   if (!s) return false;
