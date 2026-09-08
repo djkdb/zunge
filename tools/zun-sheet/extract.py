@@ -22,6 +22,48 @@ from collections import deque
 from PIL import Image
 
 
+DEFAULT_LOCATIONS = [
+    'zun-sheet.png',
+    'public/zun-sheet.png',
+    'reference/zun-sheet.png',
+    os.path.expanduser('~/zun-sheet.png'),
+    os.path.expanduser('~/Downloads/zun-sheet.png'),
+]
+
+
+def find_sheet() -> str | None:
+    for c in DEFAULT_LOCATIONS:
+        if os.path.isfile(c):
+            return c
+    return None
+
+
+def verify(path: str) -> tuple[bool, str]:
+    """저장한 PNG에 캐릭터가 정확히 한 명만 있고 배경이 투명한지 확인한다."""
+    im = Image.open(path).convert('RGBA')
+    w, h = im.size
+    px = im.load()
+    cols = [sum(1 for y in range(h) if px[x, y][3] > 8) for x in range(w)]
+    # 가운데에 8px 이상 빈 열이 이어지면 캐릭터가 둘 이상이라는 뜻
+    blobs, run = 1, 0
+    for c in cols[2:-2]:
+        if c == 0:
+            run += 1
+        else:
+            if run >= 8:
+                blobs += 1
+            run = 0
+    corner = max(px[0, 0][3], px[w - 1, 0][3], px[0, h - 1][3], px[w - 1, h - 1][3])
+    opaque = sum(cols)
+    if opaque == 0:
+        return False, '빈 이미지'
+    if blobs != 1:
+        return False, f'캐릭터가 {blobs}명 들어 있음'
+    if corner != 0:
+        return False, f'모서리 배경이 남아 있음 (alpha {corner})'
+    return True, f'{w}x{h}'
+
+
 def is_backgroundish(r: int, g: int, b: int, sat_max: float, val_min: float) -> bool:
     """채도가 낮고 밝은 픽셀 = 체크무늬/흰 배경 후보."""
     h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
@@ -117,8 +159,8 @@ def bbox(img: Image.Image, x0: int, y0: int, x1: int, y1: int):
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument('sheet')
+    ap = argparse.ArgumentParser(description='ZUN 레퍼런스 시트를 32개 포즈 PNG로 분리한다')
+    ap.add_argument('sheet', nargs='?', help='시트 경로 (생략하면 흔한 위치에서 찾는다)')
     ap.add_argument('--cols', type=int, default=8)
     ap.add_argument('--rows', type=int, default=4)
     ap.add_argument('--out', default='public/characters/zun')
@@ -130,8 +172,20 @@ def main() -> None:
     ap.add_argument('--pad', type=int, default=2, help='잘라낼 때 남길 여백')
     args = ap.parse_args()
 
-    src = Image.open(args.sheet)
-    print(f'입력 {args.sheet} {src.size[0]}x{src.size[1]}')
+    sheet_path = args.sheet or find_sheet()
+    if not sheet_path:
+        raise SystemExit(
+            '레퍼런스 시트를 찾지 못했습니다.\n'
+            '  아래 중 한 곳에 저장한 뒤 다시 실행하세요:\n'
+            + '\n'.join(f'    {c}' for c in DEFAULT_LOCATIONS)
+            + '\n  또는 경로를 직접 지정: npm run extract-zun -- <경로>'
+        )
+
+    src = Image.open(sheet_path)
+    print(f'입력 {sheet_path} {src.size[0]}x{src.size[1]}')
+    if src.size[0] % args.cols or src.size[1] % args.rows:
+        print(f'  주의: {src.size[0]}x{src.size[1]} 가 {args.cols}x{args.rows} 로 정확히 나눠지지 않습니다. '
+              '경계 상자로 보정합니다.')
     img = strip_background(src, args.sat_max, args.val_min, args.halo)
 
     W, H = img.size
@@ -139,6 +193,7 @@ def main() -> None:
     os.makedirs(args.out, exist_ok=True)
 
     meta: dict[str, dict[str, int]] = {}
+    failures: list[tuple[str, str]] = []
     for i in range(args.cols * args.rows):
         col, row = i % args.cols, i // args.cols
         x0, y0 = col * cw, row * ch
@@ -152,9 +207,15 @@ def main() -> None:
         bx1 = min(x0 + cw, bx1 + args.pad); by1 = min(y0 + ch, by1 + args.pad)
         cell = img.crop((bx0, by0, bx1, by1))
         name = f'{i + 1:02d}.png'
-        cell.save(os.path.join(args.out, name))
+        out_path = os.path.join(args.out, name)
+        cell.save(out_path)
         meta[f'{i + 1:02d}'] = {'w': cell.size[0], 'h': cell.size[1]}
-        print(f'  {name}  {cell.size[0]}x{cell.size[1]}')
+        ok, note = verify(out_path)
+        if ok:
+            print(f'  {name}  {note}')
+        else:
+            failures.append((name, note))
+            print(f'  {name}  실패: {note}')
 
     # 게임에서 크기를 맞추는 기준: 가장 흔한 캐릭터 높이
     heights = sorted(m['h'] for m in meta.values())
@@ -166,6 +227,13 @@ def main() -> None:
         json.dump(out_meta, f, indent=2)
     print(f'\n{len(meta)}개 포즈를 {args.out} 에 저장했습니다. (기준 높이 {ref_h}px)')
     print(f'포즈 치수는 {meta_path} 에 저장했습니다.')
+    if failures:
+        print('\n검증 실패 — 아래 파일을 확인하세요:')
+        for name, note in failures:
+            print(f'  {name}: {note}')
+        print('  배경 판정을 조정해 보세요: --sat-max 0.2 --val-min 0.65 / --halo 2 / --label-h 0.16')
+        raise SystemExit(1)
+    print('\n검증 통과: 모든 PNG가 캐릭터 1명 + 배경 alpha 0 입니다.')
 
 
 if __name__ == '__main__':

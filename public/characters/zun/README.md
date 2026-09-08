@@ -1,12 +1,25 @@
 # ZUN 캐릭터 이미지
 
-이 폴더에는 32포즈 ZUN 캐릭터 PNG가 들어간다. (`01.png` ~ `32.png`)
+`01.png` ~ `32.png` (8열 x 4행 레퍼런스 시트의 32포즈)가 여기에 들어간다.
 
-레퍼런스 스프라이트 시트(8열 x 4행)를 저장한 뒤 아래 한 줄을 실행하면
-체크무늬 배경 제거 · 번호 라벨 제거 · 포즈별 분리 · 치수 메타데이터 생성이 한 번에 끝난다.
+## 넣는 법
+
+레퍼런스 시트를 저장소 루트에 `zun-sheet.png` 로 저장한 뒤:
 
 ```bash
-npm run extract-zun -- ~/zun-reference-sheet.png
+npm run extract-zun
 ```
 
-파일이 없는 동안에는 게임이 폴백 픽셀 스프라이트로 자동 전환되므로 화면이 비지 않는다.
+경로를 직접 주려면:
+
+```bash
+npm run extract-zun -- ~/Downloads/reference.png
+```
+
+스크립트가 자동으로 찾는 위치는 `zun-sheet.png`, `public/zun-sheet.png`,
+`reference/zun-sheet.png`, `~/zun-sheet.png`, `~/Downloads/zun-sheet.png` 이다.
+
+실행이 끝나면 32개 PNG를 전수 검사해서
+"캐릭터 1명 + 배경 alpha 0" 인지 확인하고 결과를 출력한다.
+
+이미지가 없는 동안에는 폴백 픽셀 스프라이트로 자동 전환되므로 게임은 정상 동작한다.

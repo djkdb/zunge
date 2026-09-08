@@ -77,9 +77,15 @@ npm run deploy         # 빌드 후 배포 → https://zun-ai-developer-tycoon.<
 레퍼런스 스프라이트 시트(8열 x 4행 = 32포즈)가 있으면 한 줄로 준비된다.
 
 ```bash
-npm run extract-zun -- ~/zun-reference-sheet.png
+# 레퍼런스 시트를 저장소 루트에 zun-sheet.png 로 저장한 뒤
+npm run extract-zun
 npm run dev
 ```
+
+경로를 직접 주려면 `npm run extract-zun -- <경로>`.
+스크립트는 `zun-sheet.png`, `public/zun-sheet.png`, `~/Downloads/zun-sheet.png` 등을 자동으로 찾는다.
+실행이 끝나면 32개 PNG를 전수 검사해 "캐릭터 1명 + 배경 alpha 0" 을 확인하고,
+하나라도 실패하면 조정 옵션을 안내하며 종료 코드 1로 끝난다.
 
 `tools/zun-sheet/extract.py` 가 하는 일:
 
