@@ -70,3 +70,57 @@ src/
 npx wrangler login     # 최초 1회, 브라우저에서 Cloudflare 로그인
 npm run deploy         # 빌드 후 배포 → https://zun-ai-developer-tycoon.<계정>.workers.dev
 ```
+
+## ZUN 캐릭터 이미지 넣기
+
+게임의 ZUN은 `public/characters/zun/01.png` ~ `32.png` 이미지를 그대로 렌더링한다.
+레퍼런스 스프라이트 시트(8열 x 4행 = 32포즈)가 있으면 한 줄로 준비된다.
+
+```bash
+npm run extract-zun -- ~/zun-reference-sheet.png
+npm run dev
+```
+
+`tools/zun-sheet/extract.py` 가 하는 일:
+
+1. 투명 체크무늬(또는 단색) 배경을 테두리에서 flood fill 로 제거해 실제 alpha 로 바꾼다.
+   캐릭터 안쪽의 흰색(신발 · 얼굴)은 어두운 아웃라인에 둘러싸여 있어 지워지지 않는다.
+2. 가장자리에 남는 밝은 halo 를 한 번 더 걷어낸다.
+3. 칸마다 좌상단의 번호 라벨을 지운다.
+4. 캐릭터의 실제 경계 상자로 잘라 `01.png` ~ `32.png` 로 저장한다.
+5. 포즈별 치수를 `src/game/data/zunPoseMeta.json` 에 기록해, 게임이 원본 비율을 유지한 채
+   발 기준으로 배치할 수 있게 한다.
+
+조정이 필요하면:
+
+```bash
+python3 tools/zun-sheet/extract.py <시트> --sat-max 0.2 --val-min 0.65   # 배경 판정 완화
+python3 tools/zun-sheet/extract.py <시트> --halo 2                       # halo 를 더 벗겨냄
+python3 tools/zun-sheet/extract.py <시트> --label-h 0.16                 # 번호 라벨이 남을 때
+```
+
+이미지가 없으면 폴백 픽셀 스프라이트(`zunFallbackSprite.ts`)로 자동 전환되므로
+파일을 넣기 전에도 게임은 정상 동작한다.
+
+### 포즈와 게임 상태 연결
+
+`src/game/data/zunPoses.ts` 한곳에서 관리한다.
+
+| 게임 상태 | 포즈 | 칸 |
+| --- | --- | --- |
+| 개발 중 | code | 22 |
+| 버그 수정 중 | debugging | 29 |
+| 평상시 | idle | 01 |
+| 집중 | code | 22 |
+| 프로젝트 출시 · 이벤트 성공 | celebration | 14 |
+| 이벤트 · 아이디어 | idea | 06 |
+| 레벨업 · 리부트 | thumbsup | 31 |
+| 자금 부족 · 오류 | debugging | 29 |
+| 멘붕 | tired | 15 |
+| 오프라인 보상 | sleeping | 26 |
+| 튜토리얼 안내 | idea | 06 |
+
+방 안에서는 책상이 허리 아래를 가리므로, 책상 · 노트북이 함께 그려진 칸
+(02 · 05 · 08 · 11 · 17 · 24 · 32)은 쓰지 않는다. 그 칸들은 책상이 없는
+모달 · 튜토리얼 화면에서 쓴다 (`FULL_POSE`).
+

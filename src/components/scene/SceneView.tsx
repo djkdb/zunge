@@ -49,6 +49,7 @@ export function SceneView({ compact = false, desktop = false, onGoProjects }: { 
   const ai = aiTier(aiT);
   const st = stageDef(stage);
   const typing = activeDevs.length > 0;
+  const bugged = activeDevs.some((a) => a.bugged);
   const pets = useMemo(() => unlockedPets(level).map((p) => p.id), [level]);
 
   // 말풍선 라인 회전
@@ -74,7 +75,7 @@ export function SceneView({ compact = false, desktop = false, onGoProjects }: { 
 
   return (
     <div className={`relative w-full overflow-hidden ${compact ? 'aspect-[16/7]' : 'aspect-[16/10]'} bg-navy-deep select-none`}>
-      <RoomScene stage={stage} mood={mood} typing={typing} aiTier={aiT} aiColor={ai.color} teamCount={team} pets={pets} zoom={zoom} />
+      <RoomScene stage={stage} mood={mood} typing={typing} bugged={bugged} aiTier={aiT} aiColor={ai.color} teamCount={team} pets={pets} zoom={zoom} />
 
       {/* 탭 영역 (ZUN) */}
       <button

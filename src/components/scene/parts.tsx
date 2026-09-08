@@ -1,7 +1,7 @@
 /** 공간 씬을 구성하는 SVG 픽셀 파츠 (viewBox 320 x 200 기준) */
 import type { ReactNode } from 'react';
 import { PixelSprite } from './PixelSprite';
-import { TEAMMATE_ROWS, TEAMMATE_STYLES, teammatePalette } from './zunSprite';
+import { TEAMMATE_ROWS, TEAMMATE_STYLES, teammatePalette } from './teammateSprite';
 
 const R = ({ x, y, w, h, c, className, style, rx, opacity }: { x: number; y: number; w: number; h: number; c: string; className?: string; style?: React.CSSProperties; rx?: number; opacity?: number }) => (
   <rect x={x} y={y} width={w} height={h} fill={c} className={className} style={style} rx={rx} opacity={opacity} />

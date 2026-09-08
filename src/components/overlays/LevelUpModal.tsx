@@ -8,7 +8,7 @@ import { UPGRADES } from '../../game/data/upgrades';
 import { PETS } from '../../game/data/pets';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { ZunSprite } from '../scene/ZunSprite';
+import { ZunPortrait } from '../scene/ZunSprite';
 import { Confetti } from './Confetti';
 import { Badge } from '../ui/Badge';
 
@@ -35,7 +35,7 @@ export function LevelUpModal() {
           </div>
           <div className="mt-0.5 text-sm font-bold text-ink-soft">{levelTitle(level)}</div>
           {newTitle && <Badge tone="gold" className="mt-1">🎖️ 새 타이틀: {newTitle.title}</Badge>}
-          <div className="my-3 flex justify-center"><ZunSprite mood="confident" scale={2} /></div>
+          <div className="my-3 flex justify-center"><ZunPortrait pose="celebration" height={128} /></div>
           {unlocks.length > 0 ? (
             <div className="flex flex-col gap-1.5">
               <div className="text-[10px] font-black uppercase tracking-wider text-ink-muted">새로 해금됨</div>

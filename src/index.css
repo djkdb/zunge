@@ -251,3 +251,22 @@ button { font-family: inherit; }
 .dot-3 { animation: dots 1.2s 0.4s infinite; }
 @keyframes star-twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 .star-anim { animation: star-twinkle 2.4s ease-in-out infinite; }
+
+/* ───── 캐릭터 포즈별 움직임 ───── */
+@keyframes bob-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1px); }
+}
+@keyframes pop-once {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@keyframes dash-move {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  25% { transform: translateX(1.5px) translateY(-1px); }
+  75% { transform: translateX(-1.5px) translateY(-1px); }
+}
+.anim-bob-soft { animation: bob-soft 3.2s ease-in-out infinite; }
+.anim-pop-once { animation: pop-once 0.5s ease-out 2; }
+.anim-dash { animation: dash-move 0.5s ease-in-out infinite; }

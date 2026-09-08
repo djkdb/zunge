@@ -3,7 +3,7 @@ import { useUi } from '../../hooks/useGame';
 import { actions } from '../../game/store';
 import { TUTORIAL_MAP } from '../../game/data/tutorials';
 import { Button } from '../ui/Button';
-import { ZunSprite } from '../scene/ZunSprite';
+import { ZunPortrait } from '../scene/ZunSprite';
 
 interface Rect { top: number; left: number; width: number; height: number }
 
@@ -103,7 +103,7 @@ export function TutorialOverlay() {
         <div className="card anim-pop w-full max-w-sm p-4">
           <div className="flex items-start gap-3">
             <div className="shrink-0">
-              <ZunSprite mood={last ? 'confident' : 'happy'} scale={1} />
+              <ZunPortrait pose={last ? 'thumbsup' : 'idea'} height={64} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">

@@ -2,10 +2,11 @@ import type { Mood } from '../../game/types';
 import type { Palette } from './PixelSprite';
 
 /**
- * ZUN 픽셀 스프라이트 (48 x 64) — 치비 비율의 전신 캐릭터.
+ * ZUN 폴백 스프라이트 (48 x 64).
  *
- * scripts/zun-sprite/gen.py 로 생성한 결과를 옮겨 담은 것이다.
- * 실루엣 바깥은 자동 아웃라인 처리되어 있고, 광원은 좌측 상단이다.
+ * 평소에는 `public/characters/zun/01.png` ~ `32.png` 이미지를 쓴다.
+ * 이 파일은 그 이미지가 아직 없을 때만 게임이 빈 화면이 되지 않도록 하는 대체 자산이다.
+ * tools/zun-sprite/gen.py 로 생성했다.
  */
 export const ZUN_PALETTE: Palette = {
   C: '#22305c', // 캡 기본
@@ -243,78 +244,3 @@ export const ZUN_WIDTH = 48;
 export const ZUN_HEIGHT = 64;
 /** 책상 위로 드러나는 상반신 높이 (행 수) — 아래는 책상에 가려 그리지 않는다 */
 export const ZUN_BUST_ROWS = 42;
-
-/**
- * 팀원 스프라이트 (28 x 40) — ZUN 과 같은 톤의 축소판.
- * A(머리) · T(상의) · u(상의 그림자) 는 팀원마다 색을 바꿔 넣는다.
- */
-export const TEAMMATE_ROWS = [
-  '............................',
-  '............................',
-  '............................',
-  '............................',
-  '...........OOOOOO...........',
-  '.........OOAAAAAAOO.........',
-  '.......OOAAAAAAAAAAOO.......',
-  '......OAAAAAAAAAAAAAAO......',
-  '.....OAAAAAAAAAAAAAAAAO.....',
-  '.....OAAAAAAAAAAAAAAAAO.....',
-  '....OAAAAAAAAAAAAAAAAAAO....',
-  '....OAAAAAAAAAAAAAAAAAAO....',
-  '....OAAtASAAASASAAASAAAO....',
-  '...OAAAASSSASSSSSASSAAAAO...',
-  '...OAAAASOOOSSSSOOOSAAAAO...',
-  '...OAAAAOWWWOSSOWWWOAAAAO...',
-  '...OAAAAOWIWOSSOWIWOAAAAO...',
-  '...OAAAAOIIIOSSOIIIOAAAAO...',
-  '....OAASSOWOSSSSOWOSSAAO....',
-  '....OAkkkkSSSSSSSSkkkkAO....',
-  '.....OOOSSSSSMMSSSSSOOO.....',
-  '.......OOOSSSSSSSSOOO.......',
-  '......OuuuuussssTTTTTO......',
-  '......OuuuuuuuuTTTTTTO......',
-  '......OuuuuuuuuTTTTTTO......',
-  '.....OuuuuuuuuuTTTTTTTO.....',
-  '.....OuuuuuuuuuTTTTTTTO.....',
-  '.....OTuuuuuuuTTTTTTTTO.....',
-  '......OTuuuuuTTTTTTTTO......',
-  '......OSSSTTTTTTTTsssO......',
-  '......OSSSTTTTTTTTsssO......',
-  '......OSSSDTTTTTTDsssO......',
-  '.......OOODDDOODDDOOO.......',
-  '.........ODDDOODDDO.........',
-  '.........ODDDOODDDO.........',
-  '.........ODDDOODDDO.........',
-  '........OGGGGGGGGGGO........',
-  '........OGGGGGGGGGGO........',
-  '........OggggggggggO........',
-  '.........OOOOOOOOOO.........',
-];
-
-export function teammatePalette(hair: string, shirt: string): Palette {
-  return {
-    ...ZUN_PALETTE,
-    A: hair,
-    T: shirt,
-    u: shade(shirt, -28),
-  };
-}
-
-/** hex 색을 밝게(+) / 어둡게(-) 보정 */
-function shade(hex: string, amount: number): string {
-  const n = parseInt(hex.replace('#', ''), 16);
-  const ch = (v: number) => Math.max(0, Math.min(255, v + amount));
-  const r = ch(n >> 16);
-  const g = ch((n >> 8) & 0xff);
-  const b = ch(n & 0xff);
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-}
-
-export const TEAMMATE_STYLES: [string, string][] = [
-  ['#4a3226', '#e05a72'],
-  ['#d9b451', '#3b6cff'],
-  ['#20222e', '#22c55e'],
-  ['#9d4331', '#f5a524'],
-  ['#33336e', '#7c5cff'],
-  ['#5d4023', '#0ea5e9'],
-];

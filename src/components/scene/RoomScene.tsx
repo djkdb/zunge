@@ -1,7 +1,7 @@
 import { memo, useId } from 'react';
+import { ZunRoomFigure } from './ZunSprite';
 import type { Mood } from '../../game/types';
 import { PixelSprite } from './PixelSprite';
-import { ZUN_BUST_ROWS, ZUN_PALETTE, zunRows } from './zunSprite';
 import { AiRobot } from './AiRobot';
 import { PET_SPRITES } from './sprites';
 import {
@@ -16,6 +16,8 @@ interface Props {
   typing: boolean;
   aiTier: number;
   aiColor: string;
+  /** 버그 수정 중인지 — 포즈 선택에 쓴다 */
+  bugged?: boolean;
   teamCount: number;
   pets: string[];
   /**
@@ -33,10 +35,14 @@ const VIEW_BOX: Record<'full' | 'mobile' | 'compact', string> = {
 };
 
 // ───────── 레이아웃 상수 (viewBox 320 x 200) ─────────
-// 픽셀이 뭉개지지 않도록 스프라이트는 항상 정수 배율로만 그린다
-const ZUN_SCALE = 1;
-const ZUN_X = 136;   // 가로 중심 160 기준 (48폭)
-const ZUN_Y = 72;    // 상반신 42행 → 책상 상판(114)에 딱 맞음
+/**
+ * ZUN 배치 — 발 기준 anchor.
+ * 포즈 그림마다 크기가 달라도 발이 닿는 점(ZUN_ANCHOR_X, ZUN_BASE_Y)과
+ * 키(ZUN_HEIGHT)를 고정하므로 바닥선과 책상선이 흔들리지 않는다.
+ */
+const ZUN_ANCHOR_X = 160;   // 방 가로 중심
+const ZUN_BASE_Y = 150;     // 발이 닿는 바닥
+const ZUN_HEIGHT = 78;      // 캐릭터 키
 
 const DESK_X = 104;
 const DESK_W = 116;
@@ -49,6 +55,9 @@ const HANDS_Y = 108;
 
 const ROBOT_X = 88;
 const ROBOT_Y = 62;
+
+/** 이 y 아래는 책상에 가려 잘라낸다 */
+const ZUN_CLIP_Y = DESK_Y + 2;
 
 /** 팀원 자리: [책상 x, 책상 y, 스케일] — 뒤로 갈수록 작게 그려 원근을 만든다 */
 /** 팀원 자리: [책상 x, 책상 상판 y] — 뒤쪽 자리는 높게 두어 원근을 만든다 */
@@ -65,22 +74,22 @@ const PET_SPOTS: [number, number, number][] = [
   [104, 157, 1], [146, 149, 1], [192, 157, 1], [236, 149, 1], [278, 157, 1], [120, 149, 1],
 ];
 
-const MOOD_CLASS: Record<Mood, string> = {
-  idle: 'anim-bob svg-bottom',
-  focus: '',
-  happy: 'anim-bob svg-bottom',
-  panic: 'anim-shake svg-bottom',
-  shock: '',
-  confident: 'anim-bob svg-bottom',
-  meltdown: 'anim-wobble svg-bottom',
-};
-
-function Zun({ mood, typing }: { mood: Mood; typing: boolean }) {
-  const cls = typing && mood === 'focus' ? 'anim-typing svg-bottom' : MOOD_CLASS[mood];
+/**
+ * 방 안의 ZUN.
+ * 발밑(ZUN_BASE_Y)을 기준점으로 잡고, 책상 상판 아래는 잘라 책상 뒤에 있는 것처럼 보이게 한다.
+ * 포즈별 움직임은 ZunSprite 안에서 결정된다.
+ */
+function Zun({ mood, typing, bugged }: { mood: Mood; typing: boolean; bugged: boolean }) {
   return (
-    <g className={cls}>
-      <PixelSprite inline rows={zunRows(mood).slice(0, ZUN_BUST_ROWS)} palette={ZUN_PALETTE} scale={ZUN_SCALE} x={ZUN_X} y={ZUN_Y} />
-    </g>
+    <ZunRoomFigure
+      mood={mood}
+      typing={typing}
+      bugged={bugged}
+      cx={ZUN_ANCHOR_X}
+      bottom={ZUN_BASE_Y}
+      height={ZUN_HEIGHT}
+      clipBottom={ZUN_CLIP_Y}
+    />
   );
 }
 
@@ -149,7 +158,7 @@ function Pets({ pets }: { pets: string[] }) {
 }
 
 // ───────── 스테이지 ─────────
-function Stage1({ mood, typing, theme, uid }: { mood: Mood; typing: boolean; theme: SceneTheme; uid: string }) {
+function Stage1({ mood, typing, bugged, theme, uid }: { mood: Mood; typing: boolean; bugged: boolean; theme: SceneTheme; uid: string }) {
   return (
     <g>
       <Wall uid={uid} theme={theme} />
@@ -157,14 +166,14 @@ function Stage1({ mood, typing, theme, uid }: { mood: Mood; typing: boolean; the
       <Shelf x={258} y={54} w={50} />
       <Bed x={0} y={124} />
       <Plant x={288} y={122} />
-      <Zun mood={mood} typing={typing} />
+      <Zun mood={mood} typing={typing} bugged={bugged} />
       <Workstation stage={1} uid={uid} typing={typing} lamp />
       <PcTower x={232} y={132} w={13} h={26} />
     </g>
   );
 }
 
-function Stage2({ mood, typing, team, theme, uid }: { mood: Mood; typing: boolean; team: number; theme: SceneTheme; uid: string }) {
+function Stage2({ mood, typing, bugged, team, theme, uid }: { mood: Mood; typing: boolean; bugged: boolean; team: number; theme: SceneTheme; uid: string }) {
   return (
     <g>
       <Wall uid={uid} theme={theme} />
@@ -173,7 +182,7 @@ function Stage2({ mood, typing, team, theme, uid }: { mood: Mood; typing: boolea
       <Poster2 />
       <TeamSeats count={team} max={1} typing={typing} uid={uid} />
       <Plant x={88} y={104} big />
-      <Zun mood={mood} typing={typing} />
+      <Zun mood={mood} typing={typing} bugged={bugged} />
       <Workstation stage={2} uid={uid} typing={typing} extraMonitor />
       <PcTower x={248} y={138} w={17} h={36} color="#171b2c" rgb />
       <ServerRack x={280} y={96} w={30} h={54} lights={4} />
@@ -194,7 +203,7 @@ function Poster2() {
   );
 }
 
-function Stage3({ mood, typing, team, theme, aiColor, uid }: { mood: Mood; typing: boolean; team: number; theme: SceneTheme; aiColor: string; uid: string }) {
+function Stage3({ mood, typing, bugged, team, theme, aiColor, uid }: { mood: Mood; typing: boolean; bugged: boolean; team: number; theme: SceneTheme; aiColor: string; uid: string }) {
   return (
     <g>
       <Wall uid={uid} theme={theme} />
@@ -206,14 +215,14 @@ function Stage3({ mood, typing, team, theme, aiColor, uid }: { mood: Mood; typin
       <ServerRack x={286} y={60} w={30} h={58} lights={6} accent={aiColor} />
       <Hologram x={66} y={84} color={aiColor} />
       <TeamSeats count={team} max={2} typing={typing} dark uid={uid} />
-      <Zun mood={mood} typing={typing} />
+      <Zun mood={mood} typing={typing} bugged={bugged} />
       <Workstation stage={3} uid={uid} typing={typing} dark ultrawide />
       <PcTower x={250} y={140} w={17} h={34} color="#0b0f1e" rgb />
     </g>
   );
 }
 
-function Stage4({ mood, typing, team, theme, uid }: { mood: Mood; typing: boolean; team: number; theme: SceneTheme; uid: string }) {
+function Stage4({ mood, typing, bugged, team, theme, uid }: { mood: Mood; typing: boolean; bugged: boolean; team: number; theme: SceneTheme; uid: string }) {
   return (
     <g>
       <Wall uid={uid} theme={theme} />
@@ -221,13 +230,13 @@ function Stage4({ mood, typing, team, theme, uid }: { mood: Mood; typing: boolea
       <rect x={0} y={78} width={320} height={4} fill="#f4f6fb" />
       <ProjectBoard x={112} y={22} w={80} h={46} />
       <TeamSeats count={team} max={4} typing={typing} uid={uid} />
-      <Zun mood={mood} typing={typing} />
+      <Zun mood={mood} typing={typing} bugged={bugged} />
       <Workstation stage={4} uid={uid} typing={typing} extraMonitor />
     </g>
   );
 }
 
-function Stage5({ mood, typing, team, theme, aiColor, uid }: { mood: Mood; typing: boolean; team: number; theme: SceneTheme; aiColor: string; uid: string }) {
+function Stage5({ mood, typing, bugged, team, theme, aiColor, uid }: { mood: Mood; typing: boolean; bugged: boolean; team: number; theme: SceneTheme; aiColor: string; uid: string }) {
   return (
     <g>
       <Wall uid={uid} theme={theme} />
@@ -237,13 +246,13 @@ function Stage5({ mood, typing, team, theme, aiColor, uid }: { mood: Mood; typin
       <PixelText x={160} y={16} text="ZUN AI" color={aiColor} scale={1.4} />
       <AiCore x={160} y={44} color={aiColor} stand={false} />
       <TeamSeats count={team} max={4} typing={typing} dark uid={uid} />
-      <Zun mood={mood} typing={typing} />
+      <Zun mood={mood} typing={typing} bugged={bugged} />
       <Workstation stage={5} uid={uid} typing={typing} dark ultrawide extraMonitor />
     </g>
   );
 }
 
-export const RoomScene = memo(function RoomScene({ stage, mood, typing, aiTier, aiColor, teamCount, pets, zoom = 'full' }: Props) {
+export const RoomScene = memo(function RoomScene({ stage, mood, typing, bugged = false, aiTier, aiColor, teamCount, pets, zoom = 'full' }: Props) {
   const s = Math.min(5, Math.max(1, stage));
   const theme = SCENE_THEMES[s];
   // 모바일/데스크톱 두 씬이 동시에 존재하므로 그라디언트 id를 인스턴스마다 분리한다
@@ -256,11 +265,11 @@ export const RoomScene = memo(function RoomScene({ stage, mood, typing, aiTier, 
       aria-label="ZUN의 개발 공간"
     >
       <SceneDefs uid={uid} theme={theme} accent={aiColor} />
-      {s === 1 && <Stage1 mood={mood} typing={typing} theme={theme} uid={uid} />}
-      {s === 2 && <Stage2 mood={mood} typing={typing} team={teamCount} theme={theme} uid={uid} />}
-      {s === 3 && <Stage3 mood={mood} typing={typing} team={teamCount} theme={theme} aiColor={aiColor} uid={uid} />}
-      {s === 4 && <Stage4 mood={mood} typing={typing} team={teamCount} theme={theme} uid={uid} />}
-      {s === 5 && <Stage5 mood={mood} typing={typing} team={teamCount} theme={theme} aiColor={aiColor} uid={uid} />}
+      {s === 1 && <Stage1 mood={mood} typing={typing} bugged={bugged} theme={theme} uid={uid} />}
+      {s === 2 && <Stage2 mood={mood} typing={typing} bugged={bugged} team={teamCount} theme={theme} uid={uid} />}
+      {s === 3 && <Stage3 mood={mood} typing={typing} bugged={bugged} team={teamCount} theme={theme} aiColor={aiColor} uid={uid} />}
+      {s === 4 && <Stage4 mood={mood} typing={typing} bugged={bugged} team={teamCount} theme={theme} uid={uid} />}
+      {s === 5 && <Stage5 mood={mood} typing={typing} bugged={bugged} team={teamCount} theme={theme} aiColor={aiColor} uid={uid} />}
       <Pets pets={pets} />
       <Glow x={ROBOT_X + 8} y={ROBOT_Y + 9} r={13} uid={uid} />
       <AiRobot tier={aiTier} color={aiColor} x={ROBOT_X} y={ROBOT_Y} working={typing} scale={1} />
