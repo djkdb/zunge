@@ -23,17 +23,28 @@ from PIL import Image
 
 
 DEFAULT_LOCATIONS = [
+    'reference/',          # 폴더 안의 이미지를 자동으로 찾는다
     'zun-sheet.png',
     'public/zun-sheet.png',
-    'reference/zun-sheet.png',
     os.path.expanduser('~/zun-sheet.png'),
     os.path.expanduser('~/Downloads/zun-sheet.png'),
 ]
 
+IMAGE_EXT = ('.png', '.jpg', '.jpeg', '.webp')
+
 
 def find_sheet() -> str | None:
+    """흔한 위치에서 시트를 찾는다. 폴더면 그 안에서 가장 큰 이미지를 고른다."""
     for c in DEFAULT_LOCATIONS:
-        if os.path.isfile(c):
+        if c.endswith('/'):
+            if not os.path.isdir(c):
+                continue
+            imgs = [os.path.join(c, f) for f in sorted(os.listdir(c))
+                    if f.lower().endswith(IMAGE_EXT)]
+            if imgs:
+                # 여러 장이면 가장 큰 파일이 시트일 가능성이 높다
+                return max(imgs, key=os.path.getsize)
+        elif os.path.isfile(c):
             return c
     return None
 
