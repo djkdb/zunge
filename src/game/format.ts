@@ -7,12 +7,21 @@ const UNITS: { value: number; label: string }[] = [
   { value: 1e4, label: '만' },
 ];
 
+/** 표기 가능한 최대 단위를 넘어가면 지수로 적는다 (자릿수가 화면을 밀어내지 않게) */
+const EXP_THRESHOLD = 1e20;
+
 function compact(n: number, decimalsBelow = 100): string {
+  if (Number.isNaN(n)) return '0';
   if (!Number.isFinite(n)) return '∞';
   const sign = n < 0 ? '-' : '';
   const abs = Math.abs(n);
   if (abs < 1e4) {
     return sign + Math.floor(abs).toLocaleString('ko-KR');
+  }
+  if (abs >= EXP_THRESHOLD) {
+    const e = abs.toExponential(2);
+    const [m, ex] = e.split('e+');
+    return `${sign}${m}e${ex}`;
   }
   for (const u of UNITS) {
     if (abs >= u.value) {
@@ -38,7 +47,8 @@ export function formatMoneyShort(n: number): string {
 }
 
 export function formatRate(n: number): string {
-  if (n < 10) return `${n.toFixed(1)}원/s`;
+  if (!Number.isFinite(n)) return `${compact(n)}원/s`;
+  if (Math.abs(n) < 10) return `${n.toFixed(1)}원/s`;
   return `${compact(n)}원/s`;
 }
 
@@ -55,6 +65,7 @@ export function formatPercent(n: number, digits = 0): string {
 }
 
 export function formatDuration(seconds: number): string {
+  if (!Number.isFinite(seconds)) return '∞';
   if (seconds < 10) return `${Math.max(0.1, seconds).toFixed(1)}초`;
   const s = Math.max(0, Math.floor(seconds));
   const h = Math.floor(s / 3600);

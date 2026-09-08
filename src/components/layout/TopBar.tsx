@@ -1,5 +1,5 @@
 import { useDerived, useGame } from '../../hooks/useGame';
-import { formatMoney, formatRate, formatUsers } from '../../game/format';
+import { formatMoney, formatNumber, formatRate, formatUsers } from '../../game/format';
 import { levelTitle } from '../../game/data/levels';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
 import { ProgressBar } from '../ui/ProgressBar';
@@ -47,7 +47,7 @@ export function TopBar() {
             tone="text-[#b9a6ff]"
             label="개발력"
             main={<span className="tnum text-[#b9a6ff]">x{devSpeed.toFixed(1)}</span>}
-            sub={insight > 0 ? <span className="text-[#b9a6ff]">인사이트 {insight}</span> : <span>Lv.{level} {levelTitle(level)}</span>}
+            sub={insight > 0 ? <span className="text-[#b9a6ff]">인사이트 {formatNumber(insight)}</span> : <span>Lv.{level} {levelTitle(level)}</span>}
             className="hidden sm:flex"
           />
         </div>

@@ -4,7 +4,7 @@ import { actions } from '../../game/store';
 import { achievementRatio, canPrestige, prestigeGain, prestigeUnlocked } from '../../game/engine';
 import { ACHIEVEMENTS } from '../../game/data/achievements';
 import { ACHIEVEMENT_INCOME_PER, INSIGHT_DEV_PER, INSIGHT_INCOME_PER, PRESTIGE_MIN_EARNED, PRESTIGE_MIN_LEVEL } from '../../game/constants';
-import { formatMoney, formatPercent } from '../../game/format';
+import { formatMoney, formatPercent, formatNumber } from '../../game/format';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { Badge } from '../ui/Badge';
@@ -61,7 +61,7 @@ function RebootSection() {
           <div className="flex items-center gap-2">
             <span className="text-2xl">💡</span>
             <div>
-              <div className="text-sm font-black">인사이트 {state.insight}</div>
+              <div className="tnum text-sm font-black">인사이트 {formatNumber(state.insight)}</div>
               <div className="text-[11px] text-ink-soft">리부트 {state.prestigeCount}회 · 영구히 사라지지 않습니다</div>
             </div>
           </div>
@@ -89,7 +89,7 @@ function RebootSection() {
           </div>
           <div className="mt-1 flex items-center justify-between text-[11px]">
             <span className="text-ink-muted">획득 예정 인사이트</span>
-            <span className="tnum text-base font-black text-[#b9a6ff]">+{gain}</span>
+            <span className="tnum text-base font-black text-[#b9a6ff]">+{formatNumber(gain)}</span>
           </div>
           {gain > 0 && (
             <div className="mt-1 text-right text-[10px] font-bold text-[#5ee596]">

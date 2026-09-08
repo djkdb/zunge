@@ -179,6 +179,15 @@ button { font-family: inherit; }
   transition-duration: 0.001s !important;
 }
 
+/* 기기 설정에서 '동작 줄이기'를 켠 사람은 게임 설정을 건드리지 않아도 존중한다 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001s !important;
+  }
+}
+
 .card {
   background: var(--color-card);
   border: 1px solid var(--color-line);

@@ -1,7 +1,7 @@
 import { useGame, useUi } from '../../hooks/useGame';
 import { actions } from '../../game/store';
 import { INSIGHT_DEV_PER, INSIGHT_INCOME_PER } from '../../game/constants';
-import { formatPercent } from '../../game/format';
+import { formatPercent, formatNumber } from '../../game/format';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
@@ -30,7 +30,7 @@ export function PrestigeResultModal() {
             </div>
             <div className="anim-pop flex items-center justify-between rounded-xl bg-bg-2 px-3 py-2.5">
               <span className="text-xs font-bold text-ink-soft">보유 인사이트</span>
-              <span className="tnum text-base font-black">{insight}</span>
+              <span className="tnum text-base font-black">{formatNumber(insight)}</span>
             </div>
             <div className="anim-pop flex items-center justify-between rounded-xl bg-mint-soft px-3 py-2.5">
               <span className="text-xs font-bold text-[#5ee596]">영구 보너스</span>

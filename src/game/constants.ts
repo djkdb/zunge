@@ -55,7 +55,13 @@ export function xpToNext(level: number): number {
 export const PRESTIGE_MIN_LEVEL = 20;
 export const PRESTIGE_MIN_EARNED = 1e10;
 /** 인사이트 환산: (이번 회차 수익 / DIVISOR) ^ POW */
-export const INSIGHT_DIVISOR = 1e10;
+/**
+ * 회차 수익을 인사이트로 바꿀 때 나누는 값.
+ * 1e10 이던 시절에는 해금 시점(회차 수익 1e10)의 첫 리부트가 인사이트 +1,
+ * 즉 90분을 되감고 수익 +3% 를 받는 함정이었다. 1e9 로 낮춰
+ * 첫 리부트가 +4(수익 +12%)가 되고, 회차 간격이 실제로 짧아지게 했다.
+ */
+export const INSIGHT_DIVISOR = 1e9;
 export const INSIGHT_POW = 0.45;
 /** 인사이트 1당 영구 보너스 */
 export const INSIGHT_INCOME_PER = 0.03;

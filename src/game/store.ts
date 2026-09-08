@@ -110,6 +110,14 @@ const nextId = () => idSeq++;
 
 let moodTimer: ReturnType<typeof setTimeout> | null = null;
 
+/**
+ * 튜토리얼 사이의 최소 간격.
+ * 첫 출시 직후에는 전략 · 업그레이드 · 업적 안내 조건이 한꺼번에 충족돼
+ * 축하 순간이 카드 다섯 장으로 덮인다. 직전 안내를 닫고 나서 한 박자 쉰다.
+ */
+const TUTORIAL_GAP_MS = 25000;
+let lastTutorialAt = 0;
+
 function baseMood(state: GameState): Mood {
   if (state.activeDevs.some((a) => a.bugged)) return 'meltdown';
   if (state.activeDevs.length > 0) return 'focus';
@@ -416,6 +424,7 @@ export const actions = {
     if (!def || step >= def.steps.length) {
       gameStore.set((st) => markTutorialSeen(st, u.tutorial as string));
       uiStore.set((x) => ({ ...x, tutorial: null, tutorialStep: 0 }));
+      lastTutorialAt = Date.now();
       save();
       return;
     }
@@ -428,10 +437,12 @@ export const actions = {
     if (!u.tutorial) return;
     gameStore.set((st) => markTutorialSeen(st, u.tutorial as string));
     uiStore.set((x) => ({ ...x, tutorial: null, tutorialStep: 0 }));
+    lastTutorialAt = Date.now();
     save();
   },
   /** 설정에서 모든 튜토리얼 다시 보기 */
   resetTutorials(): void {
+    lastTutorialAt = 0;
     gameStore.set((st) => ({ ...st, seenTutorials: [] }));
     uiStore.set((u) => ({ ...u, tutorial: null, tutorialStep: 0 }));
     pushToast('📘', '튜토리얼 초기화', '처음부터 다시 안내해 드릴게요.', 'good', 2500);
@@ -541,12 +552,16 @@ function updateGolden(now: number): void {
 
 /** 조건이 충족된 튜토리얼을 자동으로 재생 */
 function updateTutorial(): void {
-  if (uiStore.get().tutorial) return;
-  // 다른 모달이 떠 있으면 순서를 양보한다
   const ui = uiStore.get();
-  if (ui.offlineReport || ui.levelUpTo || ui.stageIntro || ui.dailyOpen || ui.prestigeResult) return;
+  if (ui.tutorial) return;
+  // 다른 모달이 떠 있으면 순서를 양보한다
+  if (ui.offlineReport || ui.levelUpTo || ui.stageIntro || ui.dailyOpen || ui.prestigeResult || ui.eventChoice || ui.strategyFor) return;
   const id = pendingTutorial(gameStore.get());
   if (!id) return;
+  // 첫 안내(intro)는 기다리지 않는다
+  const now = Date.now();
+  if (id !== 'intro' && lastTutorialAt && now - lastTutorialAt < TUTORIAL_GAP_MS) return;
+  lastTutorialAt = now;
   uiStore.set((u) => ({ ...u, tutorial: id, tutorialStep: 0 }));
   const first = TUTORIAL_MAP[id]?.steps[0]?.tab;
   if (first) requestTab(first);

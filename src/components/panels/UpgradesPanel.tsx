@@ -155,18 +155,23 @@ export function UpgradesPanel() {
               ) : maxed ? (
                 <div className="rounded-lg bg-gold-soft px-2.5 py-1.5 text-center text-[11px] font-bold text-[#ffd06a]">최대 레벨 달성</div>
               ) : (
-                <Button
-                  block
-                  variant={can && recommended ? 'accent' : 'neutral'}
-                  disabled={!can}
-                  onClick={() => actions.buyUpgrade(u.id, buyMode)}
-                  sub={formatMoney(cost)}
-                >
-                  <span className="flex items-center gap-1.5">
-                    <Icon name="arrow-up" size={13} strokeWidth={2.2} />
-                    업그레이드{count > 1 ? ` x${count}` : ''}
-                  </span>
-                </Button>
+                <>
+                  <Button
+                    block
+                    variant={can && recommended ? 'accent' : 'neutral'}
+                    disabled={!can}
+                    onClick={() => actions.buyUpgrade(u.id, buyMode)}
+                    sub={formatMoney(cost)}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Icon name="arrow-up" size={13} strokeWidth={2.2} />
+                      업그레이드{count > 1 ? ` x${count}` : ''}
+                    </span>
+                  </Button>
+                  {money < cost && (
+                    <div className="text-center text-[10px] font-bold text-[#ff8aa1]">{formatMoney(cost - money)} 부족</div>
+                  )}
+                </>
               )}
             </div>
           );
