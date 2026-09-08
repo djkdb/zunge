@@ -5,7 +5,7 @@ import { PixelSprite } from './PixelSprite';
 import { AiRobot } from './AiRobot';
 import { PET_SPRITES } from './sprites';
 import {
-  AiCore, Bed, Books, CeilingLight, Cup, Desk, Glow, Hands, Hologram, Keyboard, Lamp, LedStrip, Monitor,
+  AiCore, Bed, Books, CeilingLight, Cup, Desk, Glow, Hologram, Keyboard, Lamp, LedStrip, Monitor,
   PcTower, PixelText, Plant, ProjectBoard, SCENE_THEMES, SceneDefs, SceneTheme, ServerRack, Shadow, Shelf, SmallDesk,
   Teammate, Vignette, Wall, WallScreen, Window,
 } from './parts';
@@ -41,8 +41,8 @@ const VIEW_BOX: Record<'full' | 'mobile' | 'compact', string> = {
  * 키(ZUN_HEIGHT)를 고정하므로 바닥선과 책상선이 흔들리지 않는다.
  */
 const ZUN_ANCHOR_X = 160;   // 방 가로 중심
-const ZUN_BASE_Y = 150;     // 발이 닿는 바닥
-const ZUN_HEIGHT = 78;      // 캐릭터 키
+const ZUN_BASE_Y = 132;     // 발이 닿는 바닥 (책상 뒤라 살짝 위)
+const ZUN_HEIGHT = 68;      // 캐릭터 키
 
 const DESK_X = 104;
 const DESK_W = 116;
@@ -50,8 +50,6 @@ const DESK_Y = 114;
 
 const KEYBOARD_X = 146;
 const KEYBOARD_Y = 112;
-const HANDS_X = 150;
-const HANDS_Y = 108;
 
 const ROBOT_X = 88;
 const ROBOT_Y = 62;
@@ -116,7 +114,6 @@ function Workstation({ stage, uid, typing, dark, ultrawide, extraMonitor, lamp }
       <Cup x={112} y={105} />
       <Books x={122} y={104} />
       <Keyboard x={KEYBOARD_X} y={KEYBOARD_Y} w={28} rgb={stage >= 2} />
-      <Hands x={HANDS_X} y={HANDS_Y} typing={typing} />
     </g>
   );
 }

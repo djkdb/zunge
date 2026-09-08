@@ -50,29 +50,65 @@ def find_sheet() -> str | None:
 
 
 def verify(path: str) -> tuple[bool, str]:
-    """저장한 PNG에 캐릭터가 정확히 한 명만 있고 배경이 투명한지 확인한다."""
+    """저장한 PNG에 캐릭터가 한 명만 있고 배경이 지워졌는지 확인한다.
+
+    손에 든 소품이나 효과선은 본체보다 훨씬 작으므로, 연결 요소 중
+    '본체의 25% 이상' 인 덩어리가 둘 이상일 때만 캐릭터가 여럿이라고 본다.
+    """
     im = Image.open(path).convert('RGBA')
     w, h = im.size
     px = im.load()
-    cols = [sum(1 for y in range(h) if px[x, y][3] > 8) for x in range(w)]
-    # 가운데에 8px 이상 빈 열이 이어지면 캐릭터가 둘 이상이라는 뜻
-    blobs, run = 1, 0
-    for c in cols[2:-2]:
-        if c == 0:
-            run += 1
-        else:
-            if run >= 8:
-                blobs += 1
-            run = 0
-    corner = max(px[0, 0][3], px[w - 1, 0][3], px[0, h - 1][3], px[w - 1, h - 1][3])
-    opaque = sum(cols)
-    if opaque == 0:
+
+    seen = bytearray(w * h)
+    sizes = []
+    for sy in range(h):
+        for sx in range(w):
+            i = sy * w + sx
+            if seen[i] or px[sx, sy][3] <= 8:
+                continue
+            q = deque([(sx, sy)])
+            seen[i] = 1
+            n = 0
+            while q:
+                x, y = q.popleft()
+                n += 1
+                for dx in (-1, 0, 1):
+                    for dy in (-1, 0, 1):
+                        nx, ny = x + dx, y + dy
+                        if 0 <= nx < w and 0 <= ny < h:
+                            j = ny * w + nx
+                            if not seen[j] and px[nx, ny][3] > 8:
+                                seen[j] = 1
+                                q.append((nx, ny))
+            sizes.append(n)
+    if not sizes:
         return False, '빈 이미지'
-    if blobs != 1:
-        return False, f'캐릭터가 {blobs}명 들어 있음'
-    if corner != 0:
-        return False, f'모서리 배경이 남아 있음 (alpha {corner})'
-    return True, f'{w}x{h}'
+    sizes.sort(reverse=True)
+    bodies = [n for n in sizes if n >= sizes[0] * 0.25]
+    if len(bodies) > 1:
+        return False, f'캐릭터로 보이는 덩어리가 {len(bodies)}개 (크기 {bodies[:3]})'
+
+    # 테두리에 배경색이 남아 있는지
+    border = []
+    for x in range(w):
+        border += [px[x, 0], px[x, h - 1]]
+    for y in range(h):
+        border += [px[0, y], px[w - 1, y]]
+    leftover = 0
+    for r, g, b, a in border:
+        if a <= 8:
+            continue
+        hh, ss, vv = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+        if ss <= 0.14 and vv >= 0.72:
+            leftover += 1
+    if leftover > len(border) * 0.35:
+        return False, f'테두리에 배경이 남아 있음 ({leftover}/{len(border)}px)'
+
+    props = len(sizes) - 1
+    note = f'{w}x{h}'
+    if props:
+        note += f', 소품 {props}개'
+    return True, note
 
 
 def is_backgroundish(r: int, g: int, b: int, sat_max: float, val_min: float) -> bool:
@@ -146,12 +182,107 @@ def strip_background(img: Image.Image, sat_max: float, val_min: float, halo: int
     return img
 
 
-def clear_label(img: Image.Image, x0: int, y0: int, cw: int, ch: int, frac_w: float, frac_h: float) -> None:
-    """칸 좌상단의 번호 라벨 영역을 투명하게 지운다."""
+def find_label_boxes(img: Image.Image, cols: int, rows: int) -> list[tuple[int, int, int, int]]:
+    """칸 번호 라벨의 위치를 자동으로 찾는다.
+
+    라벨은 (1) 채도가 높은 파란 글자이고 (2) 여러 칸에서 같은 높이에 나란히 있으며
+    (3) 칸 왼쪽 위에 있는 작은 덩어리라는 성질을 이용한다.
+    행마다 라벨 높이가 다른 시트에도 대응한다.
+    """
+    rgb = img.convert('RGB')
+    W, H = rgb.size
+    px = rgb.load()
+    cw = W // cols
+
+    per_row: dict[int, list[int]] = {}
+    for y in range(H):
+        xs = []
+        for x in range(W):
+            r, g, b = px[x, y]
+            if b > 110 and b - r > 70 and b - g > 50 and g > 30:
+                xs.append(x)
+        if xs:
+            per_row[y] = xs
+
+    # 세로로 이어진 구간을 밴드로 묶는다
+    bands: list[tuple[int, int]] = []
+    start = prev = None
+    for y in sorted(per_row):
+        if start is None:
+            start = y
+        elif y - prev > 6:
+            bands.append((start, prev))
+            start = y
+        prev = y
+    if start is not None:
+        bands.append((start, prev))
+
+    boxes: list[tuple[int, int, int, int]] = []
+    for y0, y1 in bands:
+        xs = sorted({x for y in range(y0, y1 + 1) for x in per_row.get(y, [])})
+        touched = {x // cw for x in xs}
+        if len(touched) < max(3, cols - 2):
+            continue  # 여러 칸에 나란히 있지 않으면 라벨이 아니다 (소품)
+        for c in sorted(touched):
+            cx = [x - c * cw for x in xs if x // cw == c]
+            lo, hi = min(cx), max(cx)
+            # 라벨은 칸 왼쪽 위의 작은 글자다
+            if hi - lo > cw * 0.45 or lo > cw * 0.5:
+                continue
+            boxes.append((c * cw + max(0, lo - 5), max(0, y0 - 5), c * cw + hi + 6, y1 + 6))
+    return boxes
+
+
+def clear_boxes(img: Image.Image, boxes: list[tuple[int, int, int, int]]) -> None:
     px = img.load()
-    for y in range(y0, min(y0 + int(ch * frac_h), img.size[1])):
-        for x in range(x0, min(x0 + int(cw * frac_w), img.size[0])):
-            px[x, y] = (0, 0, 0, 0)
+    W, H = img.size
+    for x0, y0, x1, y1 in boxes:
+        for y in range(max(0, y0), min(y1, H)):
+            for x in range(max(0, x0), min(x1, W)):
+                px[x, y] = (0, 0, 0, 0)
+
+
+def split_bands(profile: list[int], count: int, span: int) -> list[tuple[int, int]]:
+    """내용이 비어 있는 구간(여백)을 찾아 count 개의 밴드로 나눈다.
+
+    시트의 행/열 간격이 균일하지 않아도 실제 캐릭터 경계를 찾아낸다.
+    """
+    n = len(profile)
+    gaps: list[tuple[int, int]] = []
+    start = None
+    for i, v in enumerate(profile):
+        if v == 0:
+            if start is None:
+                start = i
+        elif start is not None:
+            gaps.append((start, i))
+            start = None
+    if start is not None:
+        gaps.append((start, n))
+
+    inner = [g for g in gaps if g[0] > span * 0.25 and g[1] < n - span * 0.25]
+    inner.sort(key=lambda g: g[1] - g[0], reverse=True)
+    cuts = sorted((g[0] + g[1]) // 2 for g in inner[:count - 1])
+    if len(cuts) < count - 1:
+        # 여백이 부족하면 균등 분할로 되돌린다
+        cuts = [round(n * (i + 1) / count) for i in range(count - 1)]
+
+    lead = gaps[0][1] if gaps and gaps[0][0] == 0 else 0
+    tail = gaps[-1][0] if gaps and gaps[-1][1] == n else n
+    edges = [lead, *cuts, tail]
+    return [(edges[i], edges[i + 1]) for i in range(count)]
+
+
+def profile_y(img: Image.Image, x0: int, x1: int) -> list[int]:
+    px = img.load()
+    W, H = img.size
+    return [sum(1 for x in range(max(0, x0), min(x1, W)) if px[x, y][3] > 8) for y in range(H)]
+
+
+def profile_x(img: Image.Image, y0: int, y1: int) -> list[int]:
+    px = img.load()
+    W, H = img.size
+    return [sum(1 for y in range(max(0, y0), min(y1, H)) if px[x, y][3] > 8) for x in range(W)]
 
 
 def bbox(img: Image.Image, x0: int, y0: int, x1: int, y1: int):
@@ -176,10 +307,8 @@ def main() -> None:
     ap.add_argument('--rows', type=int, default=4)
     ap.add_argument('--out', default='public/characters/zun')
     ap.add_argument('--sat-max', type=float, default=0.14, help='배경으로 볼 최대 채도')
-    ap.add_argument('--val-min', type=float, default=0.72, help='배경으로 볼 최소 명도')
+    ap.add_argument('--val-min', type=float, default=0.58, help='배경으로 볼 최소 명도')
     ap.add_argument('--halo', type=int, default=1, help='가장자리 halo 를 벗겨낼 횟수')
-    ap.add_argument('--label-w', type=float, default=0.30, help='번호 라벨 폭 비율')
-    ap.add_argument('--label-h', type=float, default=0.12, help='번호 라벨 높이 비율')
     ap.add_argument('--pad', type=int, default=2, help='잘라낼 때 남길 여백')
     args = ap.parse_args()
 
@@ -197,36 +326,45 @@ def main() -> None:
     if src.size[0] % args.cols or src.size[1] % args.rows:
         print(f'  주의: {src.size[0]}x{src.size[1]} 가 {args.cols}x{args.rows} 로 정확히 나눠지지 않습니다. '
               '경계 상자로 보정합니다.')
+    label_boxes = find_label_boxes(src, args.cols, args.rows)
+    print(f'번호 라벨 {len(label_boxes)}개를 찾았습니다.')
     img = strip_background(src, args.sat_max, args.val_min, args.halo)
+    clear_boxes(img, label_boxes)
 
     W, H = img.size
-    cw, ch = W // args.cols, H // args.rows
     os.makedirs(args.out, exist_ok=True)
-
     meta: dict[str, dict[str, int]] = {}
     failures: list[tuple[str, str]] = []
-    for i in range(args.cols * args.rows):
-        col, row = i % args.cols, i // args.cols
-        x0, y0 = col * cw, row * ch
-        clear_label(img, x0, y0, cw, ch, args.label_w, args.label_h)
-        box = bbox(img, x0, y0, x0 + cw, y0 + ch)
-        if box is None:
-            print(f'  {i + 1:02d} 비어 있음 — 건너뜀')
-            continue
-        bx0, by0, bx1, by1 = box
-        bx0 = max(x0, bx0 - args.pad); by0 = max(y0, by0 - args.pad)
-        bx1 = min(x0 + cw, bx1 + args.pad); by1 = min(y0 + ch, by1 + args.pad)
-        cell = img.crop((bx0, by0, bx1, by1))
-        name = f'{i + 1:02d}.png'
-        out_path = os.path.join(args.out, name)
-        cell.save(out_path)
-        meta[f'{i + 1:02d}'] = {'w': cell.size[0], 'h': cell.size[1]}
-        ok, note = verify(out_path)
-        if ok:
-            print(f'  {name}  {note}')
-        else:
-            failures.append((name, note))
-            print(f'  {name}  실패: {note}')
+
+    # 열 간격은 일정하지만 행 간격은 시트마다 다를 수 있어, 행만 실제 여백으로 나눈다
+    cw = W // args.cols
+    row_bands = split_bands(profile_y(img, 0, W), args.rows, H / args.rows)
+    print('행 구간:', row_bands)
+
+    for r, (ry0, ry1) in enumerate(row_bands):
+        for c in range(args.cols):
+            cx0, cx1 = c * cw, (c + 1) * cw
+            i = r * args.cols + c
+            box = bbox(img, cx0, ry0, cx1, ry1)
+            name = f'{i + 1:02d}.png'
+            if box is None:
+                failures.append((name, '캐릭터를 찾지 못했습니다'))
+                continue
+            bx0, by0, bx1, by1 = box
+            bx0 = max(cx0, bx0 - args.pad)
+            by0 = max(ry0, by0 - args.pad)
+            bx1 = min(cx1, bx1 + args.pad)
+            by1 = min(ry1, by1 + args.pad)
+            cell = img.crop((bx0, by0, bx1, by1))
+            out_path = os.path.join(args.out, name)
+            cell.save(out_path)
+            meta[f'{i + 1:02d}'] = {'w': cell.size[0], 'h': cell.size[1]}
+            ok, note = verify(out_path)
+            if ok:
+                print(f'  {name}  {note}')
+            else:
+                failures.append((name, note))
+                print(f'  {name}  실패: {note}')
 
     # 게임에서 크기를 맞추는 기준: 가장 흔한 캐릭터 높이
     heights = sorted(m['h'] for m in meta.values())
@@ -242,7 +380,7 @@ def main() -> None:
         print('\n검증 실패 — 아래 파일을 확인하세요:')
         for name, note in failures:
             print(f'  {name}: {note}')
-        print('  배경 판정을 조정해 보세요: --sat-max 0.2 --val-min 0.65 / --halo 2 / --label-h 0.16')
+        print('  배경 판정을 조정해 보세요: --sat-max 0.2 --val-min 0.5 / --halo 2')
         raise SystemExit(1)
     print('\n검증 통과: 모든 PNG가 캐릭터 1명 + 배경 alpha 0 입니다.')
 
