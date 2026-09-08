@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useDerived, useGame, useUi } from '../../hooks/useGame';
 import { actions } from '../../game/store';
 import { PROJECT_MAP } from '../../game/data/projects';
@@ -8,6 +9,7 @@ import type { DevStrategy, StrategyDef } from '../../game/types';
 import { Modal } from '../ui/Modal';
 import { Icon, type IconName } from '../ui/Icon';
 import { ZunPortrait } from '../scene/ZunSprite';
+import { STRATEGY_POSE } from '../../game/data/zunPoses';
 
 const STRATEGY_ICON: Record<DevStrategy, IconName> = {
   fast: 'rocket',
@@ -25,6 +27,8 @@ export function StrategyModal() {
   const costMult = useDerived((d) => d.costMult);
   const devSpeed = useDerived((d) => d.devSpeed);
   const successBonus = useDerived((d) => d.successBonus);
+  // 카드를 짚는 동안 ZUN이 그 전략의 모습으로 바뀐다
+  const [hover, setHover] = useState<DevStrategy | null>(null);
 
   const def = projectId ? PROJECT_MAP[projectId] : null;
   if (!def || !projectId) return null;
@@ -45,7 +49,7 @@ export function StrategyModal() {
     <Modal open onClose={() => actions.closeStrategy()} className="max-w-lg">
       <div className="card max-h-[90vh] overflow-y-auto p-3">
         <div className="flex items-center gap-2.5">
-          <ZunPortrait pose="thinking" height={48} />
+          <ZunPortrait pose={hover ? STRATEGY_POSE[hover] : 'thinking'} height={48} />
           <div className="min-w-0 flex-1">
             <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8ab8ff]">개발 전략</div>
             <h3 className="truncate text-base font-black">
@@ -67,6 +71,7 @@ export function StrategyModal() {
               devSpeed={devSpeed}
               successBonus={successBonus}
               money={state.money}
+              onHover={setHover}
               onPick={() => actions.confirmStrategy(projectId, st.id)}
             />
           ))}
@@ -93,10 +98,11 @@ interface CardProps {
   devSpeed: number;
   successBonus: number;
   money: number;
+  onHover: (id: DevStrategy | null) => void;
   onPick: () => void;
 }
 
-function StrategyCard({ st, def, version, base, costMult, devSpeed, successBonus, money, onPick }: CardProps) {
+function StrategyCard({ st, def, version, base, costMult, devSpeed, successBonus, money, onHover, onPick }: CardProps) {
   const nextV = version + 1;
   const cost = projectCost(def, version, costMult, st.id);
   const time = projectDevTime(def, version, st.id) / devSpeed;
@@ -110,6 +116,10 @@ function StrategyCard({ st, def, version, base, costMult, devSpeed, successBonus
       type="button"
       disabled={!afford}
       onClick={onPick}
+      onPointerEnter={() => onHover(st.id)}
+      onPointerLeave={() => onHover(null)}
+      onFocus={() => onHover(st.id)}
+      onBlur={() => onHover(null)}
       className="btn-press card-2 w-full p-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-45 enabled:hover:bg-[#223059]"
       style={{ borderColor: afford ? `${st.color}55` : undefined }}
     >
