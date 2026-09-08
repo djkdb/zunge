@@ -204,6 +204,76 @@ button { font-family: inherit; }
 }
 .text-pixel { font-family: var(--font-pixel); }
 
+/* ───── 버튼: 눌리는 키캡 ─────
+ * 그라데이션과 광선 그림자 대신, 아래쪽 2px 단단한 모서리를 두고
+ * 누르면 그 모서리가 사라지며 실제로 내려앉게 한다.
+ */
+.btn {
+  --btn-face: var(--color-card-2);
+  --btn-edge: #0e1430;
+  --btn-text: var(--color-ink);
+  --btn-line: var(--color-line-2);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  user-select: none;
+  border: 1px solid var(--btn-line);
+  border-radius: 0.7rem;
+  background: var(--btn-face);
+  color: var(--btn-text);
+  box-shadow: 0 2px 0 var(--btn-edge), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.15s ease, opacity 0.15s ease;
+}
+.btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 var(--btn-edge), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+@media (hover: hover) {
+  .btn:hover:not(:disabled) { filter: brightness(1.08); }
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 2px 0 var(--btn-edge), 0 0 0 3px rgba(125, 165, 255, 0.55);
+}
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+  filter: saturate(0.25);
+  box-shadow: none;
+  transform: none;
+}
+
+/* 색은 역할이 있을 때만 쓴다: 화면당 강조 버튼은 하나 */
+.btn-accent  { --btn-face: #3d7dfb; --btn-edge: #1f4fb5; --btn-line: #5c93ff; --btn-text: #fff; }
+.btn-go      { --btn-face: #21b567; --btn-edge: #11804a; --btn-line: #3ccc82; --btn-text: #fff; }
+.btn-gold    { --btn-face: #f0a92c; --btn-edge: #b0731a; --btn-line: #ffc555; --btn-text: #241503; }
+.btn-danger  { --btn-face: #e05070; --btn-edge: #9c2c48; --btn-line: #ff7593; --btn-text: #fff; }
+.btn-quiet   { --btn-face: transparent; --btn-edge: transparent; --btn-line: transparent; --btn-text: var(--color-ink-soft); box-shadow: none; }
+.btn-quiet:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+@media (hover: hover) { .btn-quiet:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); filter: none; } }
+
+/* 버튼 안에서 값(가격 등)은 라벨보다 한 단계 약하게 */
+.btn-value {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.82;
+  font-weight: 700;
+}
+.btn-value::before {
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 0.85em;
+  margin-right: 0.5rem;
+  vertical-align: -0.1em;
+  background: currentColor;
+  opacity: 0.35;
+}
+
 .btn-press { transition: transform 0.12s ease, box-shadow 0.15s ease, background-color 0.15s ease, opacity 0.15s ease; }
 .btn-press:active:not(:disabled) { transform: scale(0.96); }
 @media (hover: hover) {

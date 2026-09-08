@@ -9,14 +9,15 @@ const TONE = {
 
 export function Toasts() {
   const toasts = useUi((u) => u.toasts);
+  // 모바일에서는 씬(=ZUN)을 가리지 않도록 탭바 바로 위에 쌓는다
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-[64px] z-40 flex flex-col items-center gap-1.5 px-3 md:top-20">
-      {toasts.map((t) => (
+    <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-[60px] z-40 flex flex-col items-center gap-1.5 px-3 md:inset-x-auto md:bottom-auto md:right-5 md:top-[116px] md:items-end">
+      {toasts.slice(-3).map((t) => (
         <button
           type="button"
           key={t.id}
           onClick={() => dismissToast(t.id)}
-          className={`anim-slide-down pointer-events-auto flex w-full max-w-[320px] items-start gap-2 rounded-xl border px-2.5 py-1.5 text-left shadow-pop backdrop-blur ${TONE[t.tone]}`}
+          className={`anim-slide-up pointer-events-auto md:anim-slide-down flex w-full max-w-[320px] items-start gap-2 rounded-xl border px-2.5 py-1.5 text-left shadow-pop backdrop-blur ${TONE[t.tone]}`}
         >
           <span className="text-base leading-none">{t.icon}</span>
           <div className="min-w-0 flex-1">

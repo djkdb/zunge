@@ -9,6 +9,7 @@ import { AUTODEV_UNLOCK_LEVEL } from '../../game/constants';
 import { formatDuration, formatMoney, formatRate, formatUsers } from '../../game/format';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
+import { Icon } from '../ui/Icon';
 import type { ProjectDef } from '../../game/types';
 
 const TIER_TONE = { 1: 'mint', 2: 'primary', 3: 'violet', 4: 'gold' } as const;
@@ -59,7 +60,7 @@ export function ProjectsPanel() {
           className={`btn-press flex items-center justify-between rounded-xl px-3 py-2.5 text-left ${autoDev ? 'bg-mint-soft' : 'card'}`}
         >
           <div className="flex items-center gap-2">
-            <span className="text-lg">🔁</span>
+            <Icon name="loop" size={18} className={autoDev ? 'text-mint' : 'text-ink-soft'} />
             <div>
               <div className="text-xs font-black">자동 개발 {autoDev ? 'ON' : 'OFF'}</div>
               <div className="text-[11px] text-ink-soft">빈 슬롯에 가장 비싼 프로젝트를 알아서 착수합니다</div>
@@ -70,7 +71,7 @@ export function ProjectsPanel() {
           </span>
         </button>
       ) : (
-        <div className="card px-3 py-2 text-[11px] font-bold text-ink-soft">🔒 자동 개발은 레벨 {AUTODEV_UNLOCK_LEVEL}에 해금됩니다</div>
+        <div className="card flex items-center gap-1.5 px-3 py-2 text-[11px] font-bold text-ink-soft"><Icon name="lock" size={13} />자동 개발은 레벨 {AUTODEV_UNLOCK_LEVEL}에 해금됩니다</div>
       )}
       <div className="grid gap-2.5 sm:grid-cols-2">
         {list.map((p, i) => (
@@ -128,8 +129,8 @@ function ProjectCard({ def, index, money, level, ai, version, active, costMult, 
       style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
     >
       <div className="flex items-start gap-2.5">
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-2xl ${unlocked ? 'bg-bg-2' : 'bg-bg-2 grayscale'}`}>
-          {unlocked ? def.icon : '🔒'}
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-bg-2 text-2xl ${unlocked ? '' : 'text-ink-muted grayscale'}`}>
+          {unlocked ? def.icon : <Icon name="lock" size={18} />}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1">
@@ -142,8 +143,17 @@ function ProjectCard({ def, index, money, level, ai, version, active, costMult, 
       </div>
 
       {unlocked ? (
-        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]">
-          <Row k="수익" v={<span className="text-[#5ee596]">{version > 0 ? `${formatRate(curIncome)} → ` : ''}{formatRate(income)}</span>} />
+        <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 rounded-lg bg-bg-2/60 px-2.5 py-2 text-[11px]">
+          <Row
+            wide
+            k="수익"
+            v={
+              <span className="text-[#5ee596]">
+                {version > 0 && <span className="text-ink-muted">{formatRate(curIncome)} → </span>}
+                {formatRate(income)}
+              </span>
+            }
+          />
           <Row k="사용자" v={<span className="text-[#8ab8ff]">+{formatUsers(users)}</span>} />
           <Row k="개발 시간" v={formatDuration(time)} />
           <Row k="경험치" v={<span className="text-[#b9a6ff]">+{xp} XP</span>} />
@@ -151,25 +161,38 @@ function ProjectCard({ def, index, money, level, ai, version, active, costMult, 
         </div>
       ) : (
         <div className="rounded-lg bg-bg-2 px-2.5 py-1.5 text-[11px] font-bold text-ink-soft">
-          {level < def.requiredLevel && <div>🔒 레벨 {def.requiredLevel} 필요 (현재 Lv.{level})</div>}
-          {ai < def.requiredAi && <div>🤖 {reqAi.name} 이상 필요</div>}
+          {level < def.requiredLevel && <div className="flex items-center gap-1.5"><Icon name="lock" size={13} />레벨 {def.requiredLevel} 필요 (현재 Lv.{level})</div>}
+          {ai < def.requiredAi && <div className="flex items-center gap-1.5"><Icon name="ai" size={13} />{reqAi.name} 이상 필요</div>}
         </div>
       )}
 
       {active ? (
-        <div className="flex items-center justify-between rounded-lg bg-primary-soft px-2.5 py-1.5">
-          <span className="text-[11px] font-bold text-[#8ab8ff]">{active.bugged ? '🐛 버그 수정 중' : '🛠️ 개발 중'} {Math.floor(active.progress * 100)}%</span>
+        <div className="mt-auto flex items-center justify-between rounded-lg bg-primary-soft px-2.5 py-1.5">
+          <span className="flex items-center gap-1.5 text-[11px] font-bold text-[#8ab8ff]">
+            <Icon name={active.bugged ? 'bug' : 'bolt'} size={13} />
+            {active.bugged ? '버그 수정 중' : '개발 중'} {Math.floor(active.progress * 100)}%
+          </span>
           <button type="button" onClick={() => actions.cancelProject(def.id)} className="shrink-0 whitespace-nowrap text-[11px] font-bold text-ink-muted hover:text-[#ff8aa1]">취소 (50% 환불)</button>
         </div>
       ) : (
         <Button
           block
-          variant={!unlocked || slotsFull ? 'secondary' : version > 0 ? 'primary' : 'success'}
+          className="mt-auto"
+          variant={!unlocked || slotsFull ? 'neutral' : version > 0 ? 'accent' : 'go'}
           disabled={disabled}
           onClick={() => actions.startProject(def.id)}
           title={slotsFull ? '동시 개발 슬롯이 가득 찼습니다' : undefined}
+          sub={!unlocked || slotsFull ? undefined : cost === 0 ? '무료' : formatMoney(cost)}
         >
-          {!unlocked ? '🔒 잠김' : slotsFull ? '슬롯 가득 참' : version > 0 ? `⬆️ v${nextV} 업데이트 · ${cost === 0 ? '무료' : formatMoney(cost)}` : `▶ 개발 시작 · ${cost === 0 ? '무료' : formatMoney(cost)}`}
+          {!unlocked ? (
+            <span className="flex items-center gap-1.5"><Icon name="lock" size={13} />잠김</span>
+          ) : slotsFull ? (
+            '슬롯 가득 참'
+          ) : version > 0 ? (
+            <span className="flex items-center gap-1.5"><Icon name="arrow-up" size={13} />v{nextV} 업데이트</span>
+          ) : (
+            <span className="flex items-center gap-1.5"><Icon name="play" size={11} filled />개발 시작</span>
+          )}
         </Button>
       )}
       {unlocked && !active && !canAfford && !slotsFull && (
@@ -179,11 +202,12 @@ function ProjectCard({ def, index, money, level, ai, version, active, costMult, 
   );
 }
 
-function Row({ k, v }: { k: string; v: React.ReactNode }) {
+/** 라벨을 값 위에 쌓아 좁은 폭에서도 글자가 쪼개지지 않게 한다 */
+function Row({ k, v, wide }: { k: string; v: React.ReactNode; wide?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-ink-muted">{k}</span>
-      <span className="tnum font-bold">{v}</span>
+    <div className={`min-w-0 ${wide ? 'col-span-2' : ''}`}>
+      <div className="whitespace-nowrap text-[10px] font-bold tracking-tight text-ink-muted">{k}</div>
+      <div className="tnum truncate text-[12px] font-bold">{v}</div>
     </div>
   );
 }

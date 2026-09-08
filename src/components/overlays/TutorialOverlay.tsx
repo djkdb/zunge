@@ -127,7 +127,7 @@ export function TutorialOverlay() {
                 <span key={i} className={`h-1 flex-1 rounded-full ${i <= step ? 'bg-[#5b9dff]' : 'bg-white/15'}`} />
               ))}
             </div>
-            <Button size="sm" variant={last ? 'gold' : 'primary'} onClick={() => actions.nextTutorialStep()}>
+            <Button size="sm" variant={last ? 'gold' : 'accent'} onClick={() => actions.nextTutorialStep()}>
               {last ? '알겠어!' : '다음'}
             </Button>
           </div>

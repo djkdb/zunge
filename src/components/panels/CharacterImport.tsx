@@ -130,7 +130,7 @@ export function CharacterImport() {
               ))}
           </div>
           <Button
-            variant="secondary"
+            variant="neutral"
             onClick={() => {
               void resetCharacterAssets();
               setStatus({ kind: 'idle' });

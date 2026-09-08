@@ -8,6 +8,7 @@ import { PROJECTS } from '../../game/data/projects';
 import { projectCost } from '../../game/calc';
 import { actions } from '../../game/store';
 import { Button } from '../ui/Button';
+import { Icon, type IconName } from '../ui/Icon';
 
 /** 홈 탭: 다음 목표, 빠른 액션, 최근 활동 */
 export function HomePanel({ onTab }: { onTab: (t: Tab) => void }) {
@@ -34,7 +35,7 @@ export function HomePanel({ onTab }: { onTab: (t: Tab) => void }) {
         <div className="card relative overflow-hidden p-3">
           <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/25 blur-2xl" />
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-wider text-[#8ab8ff]">🎯 다음 목표</span>
+            <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#8ab8ff]"><Icon name="target" size={12} strokeWidth={2.2} />다음 목표</span>
             <span className="tnum text-[10px] font-bold text-ink-muted">{goal.kind === 'money' ? `${formatMoney(goal.have)} / ${formatMoney(goal.need)}` : `Lv.${goal.have} / Lv.${goal.need}`}</span>
           </div>
           <div className="flex items-center gap-2">
@@ -54,28 +55,33 @@ export function HomePanel({ onTab }: { onTab: (t: Tab) => void }) {
         <div className="card flex items-center gap-2.5 p-3">
           <span className="text-2xl">{quick.icon}</span>
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-black uppercase tracking-wider text-[#5ee596]">⚡ 지금 바로</div>
+            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#5ee596]"><Icon name="bolt" size={12} strokeWidth={2.2} />지금 바로</div>
             <div className="truncate text-sm font-black">{quick.name} {(state.projectLevels[quick.id] ?? 0) > 0 ? `v${(state.projectLevels[quick.id] ?? 0) + 1}` : ''}</div>
           </div>
-          <Button size="sm" variant="success" onClick={() => actions.startProject(quick.id)}>
-            ▶ {projectCost(quick, state.projectLevels[quick.id] ?? 0, costMult) === 0 ? '무료' : formatMoney(projectCost(quick, state.projectLevels[quick.id] ?? 0, costMult))}
+          <Button
+            size="sm"
+            variant="go"
+            onClick={() => actions.startProject(quick.id)}
+            sub={projectCost(quick, state.projectLevels[quick.id] ?? 0, costMult) === 0 ? '무료' : formatMoney(projectCost(quick, state.projectLevels[quick.id] ?? 0, costMult))}
+          >
+            <span className="flex items-center gap-1"><Icon name="play" size={10} filled />개발</span>
           </Button>
         </div>
       )}
 
       <div className="grid grid-cols-4 gap-2 md:hidden">
-        <QuickBtn icon="📋" label="프로젝트" onClick={() => onTab('projects')} />
-        <QuickBtn icon="⬆️" label="업그레이드" onClick={() => onTab('upgrades')} />
-        <QuickBtn icon="🤖" label="AI" onClick={() => onTab('ai')} />
-        <QuickBtn icon="🏆" label="성장" onClick={() => onTab('growth')} badge={dailyOpen} />
+        <QuickBtn icon="projects" label="프로젝트" onClick={() => onTab('projects')} />
+        <QuickBtn icon="upgrades" label="업그레이드" onClick={() => onTab('upgrades')} />
+        <QuickBtn icon="ai" label="AI" onClick={() => onTab('ai')} />
+        <QuickBtn icon="growth" label="성장" onClick={() => onTab('growth')} badge={dailyOpen} />
       </div>
 
       <div className="card p-3">
         <div className="mb-1.5 text-xs font-black">최근 활동</div>
         <div className="flex flex-col gap-1 text-[11px]">
           {logs.slice(0, 6).map((l) => (
-            <div key={l.id} className={`flex gap-1.5 ${l.tone === 'good' ? 'text-[#5ee596]' : l.tone === 'bad' ? 'text-[#ff8aa1]' : 'text-ink-soft'}`}>
-              <span>{l.icon}</span>
+            <div key={l.id} className={`flex items-center gap-1.5 ${l.tone === 'good' ? 'text-[#5ee596]' : l.tone === 'bad' ? 'text-[#ff8aa1]' : 'text-ink-soft'}`}>
+              <span className="h-1 w-1 shrink-0 rounded-full bg-current opacity-60" />
               <span className="truncate">{l.text}</span>
             </div>
           ))}
@@ -85,10 +91,10 @@ export function HomePanel({ onTab }: { onTab: (t: Tab) => void }) {
   );
 }
 
-function QuickBtn({ icon, label, onClick, badge }: { icon: string; label: string; onClick: () => void; badge?: boolean }) {
+function QuickBtn({ icon, label, onClick, badge }: { icon: IconName; label: string; onClick: () => void; badge?: boolean }) {
   return (
-    <button type="button" onClick={onClick} className="btn-press card relative flex flex-col items-center gap-1 py-3 text-[11px] font-bold text-ink-soft hover:text-ink">
-      <span className="text-xl">{icon}</span>
+    <button type="button" onClick={onClick} className="btn-press card relative flex flex-col items-center gap-1.5 py-3 text-[11px] font-bold text-ink-soft hover:text-ink">
+      <Icon name={icon} size={20} />
       {label}
       {badge && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-coral shadow-[0_0_8px_rgba(255,122,89,0.9)]" />}
     </button>

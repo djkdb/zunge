@@ -11,6 +11,7 @@ import { RoomScene } from './RoomScene';
 import { GoldenBugOverlay, SceneActions } from './SceneActions';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Badge } from '../ui/Badge';
+import { Icon } from '../ui/Icon';
 import type { Mood } from '../../game/types';
 
 const FLOAT_TONE: Record<string, string> = {
@@ -148,7 +149,10 @@ export function SceneView({ compact = false, desktop = false, onGoProjects }: { 
               <div className="text-xs font-bold text-ink">진행 중인 프로젝트가 없어요</div>
               <div className="text-[11px] text-ink-soft">새 프로젝트를 시작해 수익을 만들어보세요</div>
             </div>
-            <span className="rounded-lg bg-mint px-2.5 py-1 text-xs font-black text-white">▶ 프로젝트 시작</span>
+            <span className="btn btn-go px-3 py-1.5 text-[12px]">
+              <Icon name="play" size={10} filled />
+              프로젝트 시작
+            </span>
           </button>
         ) : (
           activeDevs.slice(0, compact ? 1 : 3).map((dev) => {
@@ -162,7 +166,7 @@ export function SceneView({ compact = false, desktop = false, onGoProjects }: { 
                   <div className="flex min-w-0 items-center gap-1.5 text-xs font-bold text-ink">
                     <span>{def.icon}</span>
                     <span className="truncate">{def.name}{v > 0 ? ` v${v + 1}` : ''}</span>
-                    {dev.bugged && <Badge tone="rose">🐛 버그 수정 중</Badge>}
+                    {dev.bugged && <Badge tone="rose"><span className="flex items-center gap-1"><Icon name="bug" size={11} />버그 수정 중</span></Badge>}
                   </div>
                   <div className="tnum shrink-0 text-[11px] font-bold text-ink-soft">
                     {Math.floor(dev.progress * 100)}% · {formatDurationShort(remain)}
@@ -174,8 +178,9 @@ export function SceneView({ compact = false, desktop = false, onGoProjects }: { 
           })
         )}
         {!compact && activeDevs.length > 0 && activeDevs.length < slots && (
-          <button type="button" onClick={onGoProjects} className="self-end rounded-lg panel-glass px-2 py-1 text-[11px] font-bold text-ink-soft">
-            + 슬롯 {activeDevs.length}/{slots} · 프로젝트 추가
+          <button type="button" onClick={onGoProjects} className="btn-press panel-glass flex items-center gap-1 self-end rounded-lg px-2 py-1 text-[11px] font-bold text-ink-soft">
+            <Icon name="plus" size={11} strokeWidth={2.4} />
+            슬롯 {activeDevs.length}/{slots} · 프로젝트 추가
           </button>
         )}
       </div>

@@ -4,6 +4,7 @@ import { formatDuration, formatMoney, formatUsers } from '../../game/format';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { ZunPortrait } from '../scene/ZunSprite';
+import { Icon, type IconName } from '../ui/Icon';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
 
 export function OfflineModal() {
@@ -24,9 +25,9 @@ export function OfflineModal() {
             <ZunPortrait pose="sleeping" height={128} />
           </div>
           <div className="grid gap-2">
-            <Reward icon="💰" label="수익" value={<AnimatedNumber value={report.money} format={formatMoney} speed={0.08} className="text-[#ffd06a]" />} />
-            {report.users > 0 && <Reward icon="👥" label="사용자" value={<span className="text-[#8ab8ff]">+{formatUsers(report.users)}</span>} />}
-            {report.projects > 0 && <Reward icon="🚀" label="출시한 프로젝트" value={<span className="text-[#5ee596]">{report.projects}개</span>} />}
+            <Reward icon="coin" tone="text-[#ffd06a]" label="수익" value={<AnimatedNumber value={report.money} format={formatMoney} speed={0.08} className="text-[#ffd06a]" />} />
+            {report.users > 0 && <Reward icon="users" tone="text-[#8ab8ff]" label="사용자" value={<span className="text-[#8ab8ff]">+{formatUsers(report.users)}</span>} />}
+            {report.projects > 0 && <Reward icon="sparkle" tone="text-[#5ee596]" label="출시한 프로젝트" value={<span className="text-[#5ee596]">{report.projects}개</span>} />}
           </div>
           <Button block variant="gold" size="lg" className="mt-4" onClick={() => actions.closeOfflineReport()}>보상 받기</Button>
         </div>
@@ -35,10 +36,13 @@ export function OfflineModal() {
   );
 }
 
-function Reward({ icon, label, value }: { icon: string; label: string; value: React.ReactNode }) {
+function Reward({ icon, tone, label, value }: { icon: IconName; tone: string; label: string; value: React.ReactNode }) {
   return (
     <div className="anim-pop flex items-center justify-between rounded-xl bg-bg-2 px-3 py-2.5">
-      <span className="text-xs font-bold text-ink-soft">{icon} {label}</span>
+      <span className="flex items-center gap-1.5 text-xs font-bold text-ink-soft">
+        <Icon name={icon} size={14} className={tone} />
+        {label}
+      </span>
       <span className="tnum text-base font-black">{value}</span>
     </div>
   );

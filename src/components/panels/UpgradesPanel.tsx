@@ -7,6 +7,17 @@ import { formatMoney } from '../../game/format';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { ProgressBar } from '../ui/ProgressBar';
+import { Icon, type IconName } from '../ui/Icon';
+
+/** 업그레이드 항목별 아이콘 (이모지 대신 선 아이콘으로 통일) */
+const UPGRADE_ICON: Record<string, IconName> = {
+  pc: 'monitor',
+  monitor: 'display',
+  internet: 'wifi',
+  server: 'server',
+  automation: 'loop',
+  team: 'team',
+};
 
 export function UpgradesPanel() {
   const money = useGame((s) => s.money);
@@ -20,6 +31,15 @@ export function UpgradesPanel() {
 
   const nextStage = STAGES.find((s) => s.stage === stage + 1);
   const curStage = STAGES[stage - 1];
+
+  // 지금 살 수 있는 것 중 가장 싼 하나만 강조한다.
+  // 살 수 있는 모든 버튼을 색칠하면 어디를 눌러야 할지 알 수 없다.
+  const pick = UPGRADES.reduce<{ id: string; cost: number } | null>((best, u) => {
+    if (upgrades[u.id] >= u.maxLevel || level < u.requiredLevel) return best;
+    const c = bulkUpgradeCost(state, u.id, buyMode);
+    if (c.count <= 0 || money < c.cost) return best;
+    return !best || c.cost < best.cost ? { id: u.id, cost: c.cost } : best;
+  }, null)?.id;
 
   return (
     <div className="flex flex-col gap-3">
@@ -46,7 +66,7 @@ export function UpgradesPanel() {
       <div data-tut="stage-card" className="card relative overflow-hidden p-3">
         <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-violet/20 blur-2xl" />
         <div className="flex items-start gap-2.5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-bg-2 text-2xl">{nextStage ? nextStage.icon : curStage.icon}</div>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-bg-2 text-2xl">{nextStage ? nextStage.icon : curStage.icon}</div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1">
               <span className="text-sm font-black">공간 확장</span>
@@ -65,10 +85,19 @@ export function UpgradesPanel() {
         {nextStage && (
           <div className="mt-2.5">
             {level < nextStage.requiredLevel ? (
-              <div className="rounded-lg bg-bg-2 px-2.5 py-2 text-[11px] font-bold text-ink-soft">🔒 레벨 {nextStage.requiredLevel} 필요 (현재 Lv.{level})</div>
+              <div className="flex items-center gap-1.5 rounded-lg bg-bg-2 px-2.5 py-2 text-[11px] font-bold text-ink-soft"><Icon name="lock" size={13} />레벨 {nextStage.requiredLevel} 필요 (현재 Lv.{level})</div>
             ) : (
-              <Button block variant="gold" disabled={money < nextStage.cost} onClick={() => actions.buyStage()}>
-                🚚 {nextStage.name}(으)로 이사 · {formatMoney(nextStage.cost)}
+              <Button
+                block
+                variant="gold"
+                disabled={money < nextStage.cost}
+                onClick={() => actions.buyStage()}
+                sub={formatMoney(nextStage.cost)}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Icon name="building" size={14} strokeWidth={2} />
+                  {nextStage.name}(으)로 이사
+                </span>
               </Button>
             )}
             {level >= nextStage.requiredLevel && money < nextStage.cost && (
@@ -83,6 +112,7 @@ export function UpgradesPanel() {
 
       <div className="grid gap-2.5 sm:grid-cols-2">
         {UPGRADES.map((u, i) => {
+          const recommended = u.id === pick;
           const lv = upgrades[u.id];
           const maxed = lv >= u.maxLevel;
           const locked = level < u.requiredLevel;
@@ -95,7 +125,9 @@ export function UpgradesPanel() {
           return (
             <div key={u.id} className={`card anim-slide-up flex flex-col gap-2 p-3 ${locked ? 'opacity-70' : ''}`} style={{ animationDelay: `${i * 40}ms` }}>
               <div className="flex items-start gap-2.5">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-bg-2 text-2xl">{locked ? '🔒' : u.icon}</div>
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-bg-2 text-ink-soft">
+                  <Icon name={locked ? 'lock' : (UPGRADE_ICON[u.id] ?? 'upgrades')} size={20} />
+                </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm font-black">{u.name}</span>
@@ -105,17 +137,35 @@ export function UpgradesPanel() {
                 </div>
               </div>
               <ProgressBar value={lv / u.maxLevel} color="bg-gradient-to-r from-primary to-violet" height={5} />
-              <div className="grid grid-cols-1 gap-0.5 text-[11px]">
-                <div className="flex justify-between gap-2"><span className="shrink-0 whitespace-nowrap text-ink-muted">현재</span><span className="text-right font-bold">{u.effectLabel(lv)}</span></div>
-                {!maxed && <div className="flex justify-between gap-2"><span className="shrink-0 whitespace-nowrap text-ink-muted">{count > 1 ? `+${count}레벨` : '다음'}</span><span className="text-right font-bold text-[#5ee596]">{u.effectLabel(Math.min(u.maxLevel, lv + Math.max(1, count)))}</span></div>}
+              <div className="rounded-lg bg-bg-2/60 px-2.5 py-2 text-[11px]">
+                <div className="text-[10px] font-bold text-ink-muted">현재</div>
+                <div className="tnum font-bold leading-snug">{u.effectLabel(lv)}</div>
+                {!maxed && (
+                  <>
+                    <div className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-ink-muted">
+                      <Icon name="arrow-up" size={10} strokeWidth={2.4} />
+                      {count > 1 ? `+${count}레벨` : '다음'}
+                    </div>
+                    <div className="tnum font-bold leading-snug text-[#5ee596]">{u.effectLabel(Math.min(u.maxLevel, lv + Math.max(1, count)))}</div>
+                  </>
+                )}
               </div>
               {locked ? (
                 <div className="rounded-lg bg-bg-2 px-2.5 py-1.5 text-center text-[11px] font-bold text-ink-soft">레벨 {u.requiredLevel} 필요</div>
               ) : maxed ? (
                 <div className="rounded-lg bg-gold-soft px-2.5 py-1.5 text-center text-[11px] font-bold text-[#ffd06a]">최대 레벨 달성</div>
               ) : (
-                <Button block disabled={!can} onClick={() => actions.buyUpgrade(u.id, buyMode)}>
-                  ⬆️ 업그레이드{count > 1 ? ` x${count}` : ''} · {formatMoney(cost)}
+                <Button
+                  block
+                  variant={can && recommended ? 'accent' : 'neutral'}
+                  disabled={!can}
+                  onClick={() => actions.buyUpgrade(u.id, buyMode)}
+                  sub={formatMoney(cost)}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Icon name="arrow-up" size={13} strokeWidth={2.2} />
+                    업그레이드{count > 1 ? ` x${count}` : ''}
+                  </span>
                 </Button>
               )}
             </div>

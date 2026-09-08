@@ -3,6 +3,7 @@ import { formatMoney, formatRate, formatUsers } from '../../game/format';
 import { levelTitle } from '../../game/data/levels';
 import { AnimatedNumber } from '../ui/AnimatedNumber';
 import { ProgressBar } from '../ui/ProgressBar';
+import { Icon, type IconName } from '../ui/Icon';
 
 export function TopBar() {
   const money = useGame((s) => s.money);
@@ -33,18 +34,20 @@ export function TopBar() {
 
         {/* 자원 */}
         <div className="flex min-w-0 flex-1 items-stretch gap-1.5 md:gap-2">
-          <Stat tut="stat-money" icon="💰" label="자금" main={<AnimatedNumber value={money} format={formatMoney} className="text-[#ffd06a]" />} sub={<span className="text-[#5ee596]">+{formatRate(income)}</span>} />
+          <Stat tut="stat-money" icon="coin" tone="text-[#ffd06a]" label="자금" main={<AnimatedNumber value={money} format={formatMoney} className="text-[#ffd06a]" />} sub={<span className="text-[#5ee596]">+{formatRate(income)}</span>} />
           <Stat
-            icon="👥"
+            icon="users"
+            tone="text-[#8ab8ff]"
             label="사용자"
             main={<AnimatedNumber value={users} format={formatUsers} className="text-[#8ab8ff]" />}
             sub={atCap ? <span className="text-[#ff8aa1]">서버 한계!</span> : <span>최대 {formatUsers(maxUsers)}</span>}
           />
           <Stat
-            icon="⚡"
+            icon="bolt"
+            tone="text-[#b9a6ff]"
             label="개발력"
             main={<span className="tnum text-[#b9a6ff]">x{devSpeed.toFixed(1)}</span>}
-            sub={insight > 0 ? <span className="text-[#b9a6ff]">💡 인사이트 {insight}</span> : <span>Lv.{level} {levelTitle(level)}</span>}
+            sub={insight > 0 ? <span className="text-[#b9a6ff]">인사이트 {insight}</span> : <span>Lv.{level} {levelTitle(level)}</span>}
             className="hidden sm:flex"
           />
         </div>
@@ -70,10 +73,10 @@ export function TopBar() {
   );
 }
 
-function Stat({ icon, label, main, sub, className = '', tut }: { icon: string; label: string; main: React.ReactNode; sub: React.ReactNode; className?: string; tut?: string }) {
+function Stat({ icon, tone, label, main, sub, className = '', tut }: { icon: IconName; tone: string; label: string; main: React.ReactNode; sub: React.ReactNode; className?: string; tut?: string }) {
   return (
-    <div data-tut={tut} className={`card-2 flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1 md:px-3 ${className}`}>
-      <span className="text-base md:text-lg">{icon}</span>
+    <div data-tut={tut} className={`card-2 flex min-w-0 flex-1 items-center gap-2 px-2 py-1 md:px-3 ${className}`}>
+      <Icon name={icon} size={17} className={tone} />
       <div className="flex min-w-0 flex-col leading-tight">
         <span className="text-[9px] font-bold uppercase tracking-wide text-ink-muted">{label}</span>
         <span className="truncate text-xs font-black md:text-sm">{main}</span>

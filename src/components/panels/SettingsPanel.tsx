@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useGame, useUi } from '../../hooks/useGame';
 import { actions, pushToast } from '../../game/store';
 import { Button } from '../ui/Button';
+import { Icon } from '../ui/Icon';
 import { Modal } from '../ui/Modal';
 import { CharacterImport } from './CharacterImport';
 
@@ -43,21 +44,21 @@ export function SettingsPanel() {
       <CharacterImport />
 
       <div className="card flex flex-col gap-2 p-3">
-        <div className="text-xs font-black">📘 튜토리얼</div>
+        <div className="flex items-center gap-1.5 text-xs font-black"><Icon name="projects" size={14} className="text-ink-soft" />튜토리얼</div>
         <p className="text-[11px] text-ink-soft">첫 안내와 기능별 설명을 처음부터 다시 볼 수 있습니다.</p>
-        <Button variant="secondary" onClick={() => actions.resetTutorials()}>튜토리얼 다시 보기</Button>
+        <Button variant="neutral" onClick={() => actions.resetTutorials()}>튜토리얼 다시 보기</Button>
       </div>
 
       <div className="card flex flex-col gap-2 p-3">
-        <div className="text-xs font-black">💾 저장 데이터</div>
+        <div className="flex items-center gap-1.5 text-xs font-black"><Icon name="download" size={14} className="text-ink-soft" />저장 데이터</div>
         <div className="grid grid-cols-2 gap-2">
-          <Button variant="secondary" onClick={() => { actions.save(); pushToast('💾', '저장 완료', '진행 상황이 저장되었습니다.', 'good', 1800); }}>지금 저장</Button>
-          <Button variant="secondary" onClick={doExport}>내보내기</Button>
+          <Button variant="neutral" onClick={() => { actions.save(); pushToast('💾', '저장 완료', '진행 상황이 저장되었습니다.', 'good', 1800); }}>지금 저장</Button>
+          <Button variant="neutral" onClick={doExport}>내보내기</Button>
         </div>
         {exportCode && (
           <div className="flex flex-col gap-1">
             <textarea readOnly value={exportCode} onFocus={(e) => e.currentTarget.select()} className="h-20 w-full rounded-lg border border-line bg-navy-deep p-2 font-mono text-[10px] text-ink-soft" />
-            <div className="text-[10px] font-bold text-ink-muted">{copied ? '✅ 클립보드에 복사되었습니다.' : '코드를 복사해 보관하세요.'}</div>
+            <div className="flex items-center gap-1 text-[10px] font-bold text-ink-muted">{copied && <Icon name="check" size={11} className="text-mint" strokeWidth={2.4} />}{copied ? '클립보드에 복사되었습니다.' : '코드를 복사해 보관하세요.'}</div>
           </div>
         )}
         <div className="mt-1 text-[11px] font-bold text-ink-soft">가져오기</div>
@@ -67,11 +68,11 @@ export function SettingsPanel() {
           placeholder="ZUN1. 으로 시작하는 저장 코드를 붙여넣으세요"
           className="h-16 w-full rounded-lg border border-line bg-navy-deep p-2 font-mono text-[10px] text-ink placeholder:text-ink-muted"
         />
-        <Button variant="primary" disabled={!importCode.trim()} onClick={doImport}>데이터 가져오기</Button>
+        <Button variant="accent" disabled={!importCode.trim()} onClick={doImport}>데이터 가져오기</Button>
       </div>
 
       <div className="card flex flex-col gap-2 p-3">
-        <div className="text-xs font-black">🧹 초기화</div>
+        <div className="flex items-center gap-1.5 text-xs font-black"><Icon name="trash" size={14} className="text-ink-soft" />초기화</div>
         <p className="text-[11px] text-ink-soft">모든 진행 상황이 삭제되고 자취방에서 다시 시작합니다. 되돌릴 수 없습니다.</p>
         <Button variant="danger" onClick={() => setConfirmReset(true)}>게임 초기화</Button>
       </div>
@@ -82,11 +83,11 @@ export function SettingsPanel() {
 
       <Modal open={confirmReset} onClose={() => setConfirmReset(false)}>
         <div className="card p-5">
-          <div className="text-center text-3xl">🗑️</div>
+          <div className="flex justify-center text-rose"><Icon name="trash" size={30} /></div>
           <h3 className="mt-2 text-center text-base font-black">정말 초기화할까요?</h3>
           <p className="mt-1 text-center text-xs text-ink-soft">돈, 프로젝트, 업그레이드, 레벨이 모두 삭제됩니다.</p>
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <Button variant="secondary" onClick={() => setConfirmReset(false)}>취소</Button>
+            <Button variant="neutral" onClick={() => setConfirmReset(false)}>취소</Button>
             <Button variant="danger" onClick={() => { actions.reset(); setConfirmReset(false); }}>초기화</Button>
           </div>
         </div>

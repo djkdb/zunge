@@ -4,12 +4,48 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#0b1020" />
-    <meta name="description" content="작은 자취방에서 시작한 개발자 ZUN이 AI와 함께 서비스를 만들고 AI 컴퍼니로 성장하는 방치형 타이쿤 게임" />
+    <title>ZUN: AI 개발자 키우기</title>
+    <meta name="description" content="자취방에서 시작한 개발자 ZUN이 AI와 함께 서비스를 만들고 AI 컴퍼니로 성장하는 방치형 타이쿤 게임. 설치 없이 브라우저에서 바로." />
+
+    <!-- 공유 카드 (인스타 · 카카오톡 · 트위터) -->
+    <meta property="og:url" content="%VITE_SITE_URL%/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ZUN: AI 개발자 키우기" />
+    <meta property="og:title" content="ZUN: AI 개발자 키우기" />
+    <meta property="og:description" content="자취방에서 시작해 AI 컴퍼니까지. 방치해도 자라는 개발 타이쿤." />
+    <meta property="og:image" content="%VITE_SITE_URL%/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ZUN: AI 개발자 키우기" />
+    <meta name="twitter:description" content="자취방에서 시작해 AI 컴퍼니까지. 방치해도 자라는 개발 타이쿤." />
+    <meta name="twitter:image" content="%VITE_SITE_URL%/og.png" />
+
+    <!-- 홈 화면에 추가 -->
+    <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ZUN" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!--
+      폰트는 렌더를 막지 않게 불러온다.
+      셀룰러나 인앱 브라우저에서 폰트 응답이 늦어도 게임은 먼저 뜬다.
+    -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet" />
-    <title>ZUN: AI 개발자 키우기</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Silkscreen:wght@400;700&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet" />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>

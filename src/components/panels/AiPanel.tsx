@@ -6,6 +6,7 @@ import { PROJECT_MAP, PROJECTS } from '../../game/data/projects';
 import { formatMoney } from '../../game/format';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
+import { Icon } from '../ui/Icon';
 import { PixelSprite } from '../scene/PixelSprite';
 import { ROBOT_ROWS, robotPalette } from '../scene/sprites';
 import { ProgressBar } from '../ui/ProgressBar';
@@ -125,11 +126,11 @@ export function AiPanel() {
           )}
           <div className="mt-2.5">
             {level < next.requiredLevel ? (
-              <div className="rounded-lg bg-bg-2 px-2.5 py-2 text-[11px] font-bold text-ink-soft">🔒 레벨 {next.requiredLevel} 필요 (현재 Lv.{level})</div>
+              <div className="flex items-center gap-1.5 rounded-lg bg-bg-2 px-2.5 py-2 text-[11px] font-bold text-ink-soft"><Icon name="lock" size={13} />레벨 {next.requiredLevel} 필요 (현재 Lv.{level})</div>
             ) : (
               <>
-                <Button block variant="gold" disabled={money < next.cost} onClick={() => actions.buyAi()}>
-                  {next.icon} {next.name} 도입 · {formatMoney(next.cost)}
+                <Button block variant="gold" disabled={money < next.cost} onClick={() => actions.buyAi()} sub={formatMoney(next.cost)}>
+                  <span className="flex items-center gap-1.5"><Icon name="sparkle" size={13} strokeWidth={2} />{next.name} 도입</span>
                 </Button>
                 {money < next.cost && (
                   <div className="mt-1.5">

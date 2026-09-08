@@ -6,6 +6,7 @@ import { ACHIEVEMENTS } from '../../game/data/achievements';
 import { ACHIEVEMENT_INCOME_PER, INSIGHT_DEV_PER, INSIGHT_INCOME_PER, PRESTIGE_MIN_EARNED, PRESTIGE_MIN_LEVEL } from '../../game/constants';
 import { formatMoney, formatPercent } from '../../game/format';
 import { Button } from '../ui/Button';
+import { Icon } from '../ui/Icon';
 import { Badge } from '../ui/Badge';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Modal } from '../ui/Modal';
@@ -99,7 +100,7 @@ function RebootSection() {
 
         {!unlocked ? (
           <div className="mt-3 flex flex-col gap-1 rounded-xl bg-bg-2 px-3 py-2.5 text-[11px] font-bold">
-            <div className="text-ink-soft">🔒 해금 조건</div>
+            <div className="flex items-center gap-1.5 text-ink-soft"><Icon name="lock" size={12} />해금 조건</div>
             <Req ok={levelOk} label={`레벨 ${PRESTIGE_MIN_LEVEL} 달성`} now={`Lv.${state.level}`} />
             <Req ok={earnedOk} label={`이번 회차 누적 ${formatMoney(PRESTIGE_MIN_EARNED)}`} now={formatMoney(state.runEarned)} />
             <ProgressBar
@@ -111,20 +112,24 @@ function RebootSection() {
           </div>
         ) : (
           <Button block variant="gold" size="lg" className="mt-3" disabled={!ready} onClick={() => setConfirm(true)}>
-            {ready ? `🔄 리부트하고 인사이트 +${gain} 받기` : '인사이트를 1 이상 모아야 합니다'}
+            {ready ? (
+              <span className="flex items-center gap-1.5"><Icon name="loop" size={15} strokeWidth={2} />리부트하고 인사이트 +{gain} 받기</span>
+            ) : (
+              '인사이트를 1 이상 모아야 합니다'
+            )}
           </Button>
         )}
       </div>
 
       <Modal open={confirm} onClose={() => setConfirm(false)}>
         <div className="card p-5 text-center">
-          <div className="text-3xl">🔄</div>
+          <div className="flex justify-center text-gold"><Icon name="loop" size={30} /></div>
           <h3 className="mt-2 text-base font-black">정말 리부트할까요?</h3>
           <p className="mt-1 text-xs text-ink-soft">
             진행도가 초기화되고 인사이트 <b className="text-[#b9a6ff]">+{gain}</b>을 받습니다. 되돌릴 수 없습니다.
           </p>
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <Button variant="secondary" onClick={() => setConfirm(false)}>취소</Button>
+            <Button variant="neutral" onClick={() => setConfirm(false)}>취소</Button>
             <Button variant="gold" onClick={() => { actions.prestige(); setConfirm(false); }}>리부트</Button>
           </div>
         </div>
@@ -175,7 +180,7 @@ function AchievementsSection() {
               style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}
             >
               <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl ${unlocked ? 'bg-gold-soft' : 'bg-bg-2 grayscale'}`}>
-                {unlocked ? a.icon : '🔒'}
+                {unlocked ? a.icon : <Icon name="lock" size={16} />}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">

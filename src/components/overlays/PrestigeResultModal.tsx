@@ -4,6 +4,7 @@ import { INSIGHT_DEV_PER, INSIGHT_INCOME_PER } from '../../game/constants';
 import { formatPercent } from '../../game/format';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { Icon } from '../ui/Icon';
 import { Confetti } from './Confetti';
 import { ZunPortrait } from '../scene/ZunSprite';
 
@@ -24,7 +25,7 @@ export function PrestigeResultModal() {
           <div className="my-3 flex justify-center"><ZunPortrait pose="thumbsup" height={128} /></div>
           <div className="grid gap-2">
             <div className="anim-pop flex items-center justify-between rounded-xl bg-bg-2 px-3 py-2.5">
-              <span className="text-xs font-bold text-ink-soft">💡 획득한 인사이트</span>
+              <span className="flex items-center gap-1.5 text-xs font-bold text-ink-soft"><Icon name="sparkle" size={13} className="text-violet" />획득한 인사이트</span>
               <span className="tnum text-base font-black text-[#b9a6ff]">+{gained}</span>
             </div>
             <div className="anim-pop flex items-center justify-between rounded-xl bg-bg-2 px-3 py-2.5">
