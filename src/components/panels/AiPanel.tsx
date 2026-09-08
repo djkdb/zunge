@@ -58,7 +58,7 @@ export function AiPanel() {
         <div className="absolute -left-8 -top-8 h-28 w-28 rounded-full blur-3xl" style={{ background: cur.color, opacity: 0.25 }} />
         <div className="relative flex items-center gap-3">
           <div className="anim-bob flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-bg-2">
-            <PixelSprite rows={ROBOT_ROWS} palette={robotPalette(cur.color)} scale={4} />
+            <PixelSprite rows={ROBOT_ROWS} palette={robotPalette(cur.color)} scale={3} />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
@@ -101,7 +101,7 @@ export function AiPanel() {
         <div className="card p-3">
           <div className="flex items-center gap-3">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-bg-2">
-              <PixelSprite rows={ROBOT_ROWS} palette={robotPalette(next.color)} scale={3} className={level < next.requiredLevel ? 'opacity-40 grayscale' : ''} />
+              <PixelSprite rows={ROBOT_ROWS} palette={robotPalette(next.color)} scale={2} className={level < next.requiredLevel ? 'opacity-40 grayscale' : ''} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">

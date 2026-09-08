@@ -78,41 +78,41 @@ export function SceneView({ compact = false, onGoProjects }: { compact?: boolean
         type="button"
         aria-label="ZUN 응원하기"
         onClick={tap}
-        className="absolute left-[36%] top-[22%] h-[44%] w-[22%] cursor-pointer rounded-full active:scale-95"
+        className="absolute left-[38%] top-[20%] h-[52%] w-[24%] cursor-pointer rounded-2xl active:scale-95"
       >
         {rings.map((id) => (
           <span key={id} className="anim-ring pointer-events-none absolute inset-0 rounded-full border-2 border-[#ffd06a]" />
         ))}
       </button>
 
-      {/* 스테이지 라벨 */}
-      <div className="pointer-events-none absolute left-2 top-2 flex items-center gap-1.5 rounded-lg panel-glass px-2 py-1 text-[11px] font-bold text-ink">
-        <span>{st.icon}</span>
-        <span>STAGE {st.stage}</span>
-        <span className="text-ink-muted">·</span>
-        <span className="text-pixel text-[9px] tracking-wider text-[#8ab8ff]">{st.subtitle}</span>
+      {/* 스테이지 / AI 상태 배지 (세로로 정렬) */}
+      <div className="pointer-events-none absolute left-2 top-2 flex flex-col items-start gap-1">
+        <div className="flex items-center gap-1.5 rounded-lg panel-glass px-2 py-1 text-[11px] font-bold text-ink">
+          <span>{st.icon}</span>
+          <span>STAGE {st.stage}</span>
+          <span className="text-ink-muted">·</span>
+          <span className="text-pixel text-[9px] tracking-wider text-[#8ab8ff]">{st.subtitle}</span>
+        </div>
+        {!compact && (
+          <div className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-bold text-white shadow md:text-[11px]" style={{ background: ai.color, opacity: 0.94 }}>
+            <span>{ai.icon}</span>
+            <span>{ai.name}</span>
+            <span className="opacity-90">
+              {typing ? (
+                <>
+                  · {aiLine}
+                  <span className="dot-1">.</span><span className="dot-2">.</span><span className="dot-3">.</span>
+                </>
+              ) : '· 대기 중'}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ZUN 말풍선 */}
       {!compact && (
         <div key={`${mood}-${lineIdx}`} className="anim-pop pointer-events-none absolute left-[55%] top-[16%] max-w-[40%] rounded-xl rounded-bl-none bg-white px-2.5 py-1.5 text-[11px] font-bold text-navy-deep shadow-lg md:text-xs">
           {zunLine}
-        </div>
-      )}
-
-      {/* AI 상태 말풍선 */}
-      {!compact && (
-        <div className="pointer-events-none absolute left-[2%] top-[16%] flex items-center gap-1.5 rounded-lg rounded-bl-none px-2 py-1 text-[10px] font-bold text-white shadow md:text-[11px]" style={{ background: ai.color, opacity: 0.92 }}>
-          <span>{ai.icon}</span>
-          <span>{ai.name}</span>
-          <span className="opacity-90">
-            {typing ? (
-              <>
-                · {aiLine}
-                <span className="dot-1">.</span><span className="dot-2">.</span><span className="dot-3">.</span>
-              </>
-            ) : '· 대기 중'}
-          </span>
         </div>
       )}
 

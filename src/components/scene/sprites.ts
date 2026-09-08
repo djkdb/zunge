@@ -1,127 +1,189 @@
 import type { Palette } from './PixelSprite';
 
-/** AI 로봇 (12 x 14). B 본체  b 본체 그림자  F 얼굴(스크린)  E 눈  A 안테나  W 흰색 */
+/**
+ * AI 로봇 (16 x 18)
+ * O 아웃라인 · l 본체 하이라이트 · B 본체 그림자 · F 페이스 스크린 · E 발광 아이
+ * A 안테나 · W 흰색
+ */
 export const ROBOT_ROWS = [
-  '.....AA.....',
-  '.....AA.....',
-  '..BBBBBBBB..',
-  '.BBFFFFFFBB.',
-  '.BBFEFFEFBB.',
-  '.BBFFFFFFBB.',
-  '.BBFFEEFFBB.',
-  '..BBBBBBBB..',
-  '..BbbbbbbB..',
-  '.BBBBBBBBBB.',
-  'BBBbBBBBbBBB',
-  'BB.BBBBBB.BB',
-  '...BBBBBB...',
-  '...bb..bb...',
+  '.......OO.......',
+  '.......AA.......',
+  '......OAAO......',
+  '..OOOOOOOOOOOO..',
+  '..OllllllllBBO..',
+  '..OlOOOOOOOOBO..',
+  '..OlOFFFFFFOBO..',
+  '..OlOEEFFEEOBO..',
+  '..OlOFFFFFFOBO..',
+  '..OlOFFEEFFOBO..',
+  '..OlOOOOOOOOBO..',
+  '..OllllllllBBO..',
+  '..OOOOOOOOOOOO..',
+  '...OOOOOOOOOO...',
+  '..OllllllllBBO..',
+  '..OllllllllBBO..',
+  '...OllllllllO...',
+  '....OOOOOOOO....',
 ];
 
-export function robotPalette(color: string, face = '#0f1a33', eye = '#7cf0ff'): Palette {
-  return { B: color, b: shade(color, -30), F: face, E: eye, A: '#ffd166', W: '#ffffff' };
+/** 보조 에이전트 (10 x 11) */
+export const MINI_ROBOT_ROWS = [
+  '....OO....',
+  '..OOOOOO..',
+  '.OllllBBO.',
+  '.OlOOOOBO.',
+  '.OlOEEFOBO',
+  '.OlOFFEOBO',
+  '.OlOOOOBO.',
+  '.OllllBBO.',
+  '..OOOOOO..',
+  '..OllllO..',
+  '...OOOO...',
+];
+
+/** 날개 (좌측 8 x 10, 우측은 미러링) */
+export const WING_ROWS = [
+  '.......W',
+  '.....WWW',
+  '...WWWWW',
+  '..WWWWWw',
+  '.WWWWWWw',
+  'WWWWWWWw',
+  '.WWWWWWw',
+  '..WWWWWw',
+  '....WWWw',
+  '......Ww',
+];
+
+export const WING_PALETTE: Palette = { W: '#e4ecfb', w: '#a8bbdd' };
+
+export function robotPalette(color: string, face = '#0b1226', eye = '#7cf0ff'): Palette {
+  return {
+    O: '#0a0d1a',
+    l: tint(color, 34),
+    B: tint(color, -34),
+    F: face,
+    E: eye,
+    A: '#ffd166',
+    W: '#ffffff',
+  };
 }
 
-export const MINI_ROBOT_ROWS = [
-  '..AA..',
-  '.BBBB.',
-  'BFEEFB',
-  'BFFFFB',
-  '.BBBB.',
-  '.b..b.',
-];
-
-/** 날개 (좌측, 8 x 8) — 우측은 미러링 */
-export const WING_ROWS = [
-  '......WW',
-  '....WWWW',
-  '..WWWWWW',
-  'WWWWWWWW',
-  '.WWWWWWW',
-  '...WWWWW',
-  '.....WWW',
-  '.......W',
-];
-
+/**
+ * 펫 / 마스코트 (12 x 12)
+ * 각 스프라이트는 자기 팔레트를 들고 있어 방 어디에 두어도 톤이 유지된다.
+ */
 export const PET_SPRITES: Record<string, { rows: string[]; palette: Palette }> = {
   cat: {
     rows: [
-      'G.G.....',
-      'GGGGGG..',
-      'GEGEGG..',
-      'GGGGGGG.',
-      'WGGGGGGG',
-      '.GGGGGGG',
-      '.GG.GG..',
+      '..O......O..',
+      '..OO....OO..',
+      '.OGOO..OOGO.',
+      '.OGGGGGGGGO.',
+      '.OGEGGGGEGO.',
+      '.OGGGkkGGGO.',
+      '..OGGGGGGO..',
+      '...OGGGGO...',
+      '..OGGGGGGO..',
+      '.OGGGGGGGGO.',
+      '.OGGOOOOGGO.',
+      '..OO....OO..',
     ],
-    palette: { G: '#8f97ad', E: '#22c55e', W: '#ffffff' },
+    palette: { O: '#0a0d1a', G: '#98a2ba', E: '#5ee596', k: '#f3aa9c' },
   },
   codi: {
     rows: [
-      'OO.....O',
-      'OOOOOOOO',
-      'OEOOEOOO',
-      'OOOKOOO.',
-      '.OOOOOOO',
-      '.OOOOOO.',
-      '.OO..OO.',
+      '.OO......OO.',
+      '.OYO....OYO.',
+      '.OYYOOOOYYO.',
+      '.OYYYYYYYYO.',
+      '.OYEYYYYEYO.',
+      '.OYYYKKYYYO.',
+      '..OYYYYYYO..',
+      '...OYYYYO...',
+      '..OYYYYYYO..',
+      '.OYYYYYYYYO.',
+      '.OYYOOOOYYO.',
+      '..OO....OO..',
     ],
-    palette: { O: '#e39a5b', E: '#16171f', K: '#16171f' },
+    palette: { O: '#0a0d1a', Y: '#dd9553', E: '#20242f', K: '#20242f' },
   },
   minipc: {
     rows: [
-      'BBBBBBBB',
-      'BFFFFFFB',
-      'BFEFFEFB',
-      'BFFEEFFB',
-      'BBBBBBBB',
-      '..BBBB..',
-      '.BBBBBB.',
+      '............',
+      '.OOOOOOOOOO.',
+      '.OBBBBBBBBO.',
+      '.OBFFFFFFBO.',
+      '.OBFEFFEFBO.',
+      '.OBFFFFFFBO.',
+      '.OBFFEEFFBO.',
+      '.OBBBBBBBBO.',
+      '.OOOOOOOOOO.',
+      '...OOOOOO...',
+      '..OOOOOOOO..',
+      '............',
     ],
-    palette: { B: '#c9cfdd', F: '#141a33', E: '#7cf0ff' },
+    palette: { O: '#0a0d1a', B: '#c2cadb', F: '#101833', E: '#7cf0ff' },
   },
   byte: {
     rows: [
-      '..WWWW..',
-      '.WWWWWW.',
-      'WWEWWEWW',
-      'WWWWWWWW',
-      'WWWWWWWW',
-      'WWWWWWWW',
-      'W.WW.WW.',
+      '....OOOO....',
+      '..OOWWWWOO..',
+      '.OWWWWWWWWO.',
+      '.OWWPWWPWWO.',
+      '.OWWWWWWWWO.',
+      '.OWkWWWWkWO.',
+      '.OWWWWWWWWO.',
+      '.OWWWWWWWWO.',
+      '.OWWWWWWWWO.',
+      '.OWWWWWWWWO.',
+      '.OWWOWWOWWO.',
+      '..OO.OO.OO..',
     ],
-    palette: { W: '#eef2ff', E: '#141a33' },
+    palette: { O: '#0a0d1a', W: '#e9eefb', P: '#141828', k: '#c9d3ea' },
   },
   plant: {
     rows: [
-      '..GG.G..',
-      '.GGGGGG.',
-      '..GGGG..',
-      '...GG...',
-      '.PPPPPP.',
-      '.PPPPPP.',
-      '..PPPP..',
+      '...OO..OO...',
+      '..OGGOOGGO..',
+      '..OGGGGGGO..',
+      '...OGGGGO...',
+      '....OGGO....',
+      '....OGGO....',
+      '..OOOOOOOO..',
+      '..OPPPPPPO..',
+      '..OPPPPPPO..',
+      '..OPPPPPPO..',
+      '...OPPPPO...',
+      '....OOOO....',
     ],
-    palette: { G: '#3cb56a', P: '#c9805a' },
+    palette: { O: '#0a0d1a', G: '#3fb972', P: '#c47b52' },
   },
   duck: {
     rows: [
-      '..YYYY..',
-      '.YYEYYY.',
-      '.YYYYOO.',
-      '..YYYY..',
-      'YYYYYYY.',
-      'YYYYYYYY',
-      '.YYYYYY.',
+      '............',
+      '...OOOO.....',
+      '..OYYYYO....',
+      '..OYEYYORRO.',
+      '..OYYYYORRO.',
+      '.OYYYYYYO...',
+      '.OYYYYYYO...',
+      'OYYYYYYYYO..',
+      'OYYYYYYYYO..',
+      '.OYYYYYYO...',
+      '..OOOOOO....',
+      '............',
     ],
-    palette: { Y: '#ffd93b', E: '#16171f', O: '#ff8a3d' },
+    palette: { O: '#0a0d1a', Y: '#f5cd3c', E: '#141828', R: '#f08a3d' },
   },
 };
 
-function shade(hex: string, amount: number): string {
+/** hex 색을 밝게(+) / 어둡게(-) 보정 */
+function tint(hex: string, amount: number): string {
   const n = parseInt(hex.replace('#', ''), 16);
-  const r = Math.max(0, Math.min(255, (n >> 16) + amount));
-  const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amount));
-  const b = Math.max(0, Math.min(255, (n & 0xff) + amount));
+  const ch = (v: number) => Math.max(0, Math.min(255, v + amount));
+  const r = ch(n >> 16);
+  const g = ch((n >> 8) & 0xff);
+  const b = ch(n & 0xff);
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }

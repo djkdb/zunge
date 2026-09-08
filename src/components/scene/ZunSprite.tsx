@@ -22,7 +22,7 @@ const MOOD_ANIM: Record<Mood, string> = {
 };
 
 /** ZUN 캐릭터 (HTML 컨텍스트용) */
-export const ZunSprite = memo(function ZunSprite({ mood, typing, scale = 4, className = '', style }: Props) {
+export const ZunSprite = memo(function ZunSprite({ mood, typing, scale = 3, className = '', style }: Props) {
   const anim = typing && mood === 'focus' ? 'anim-typing' : MOOD_ANIM[mood];
   return (
     <div className={`inline-block ${anim} ${className}`} style={{ ...style, transformOrigin: '50% 100%' }}>

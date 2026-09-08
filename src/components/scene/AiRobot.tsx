@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { PixelSprite } from './PixelSprite';
-import { MINI_ROBOT_ROWS, ROBOT_ROWS, WING_ROWS, robotPalette } from './sprites';
+import { MINI_ROBOT_ROWS, ROBOT_ROWS, WING_PALETTE, WING_ROWS, robotPalette } from './sprites';
 
 interface Props {
   tier: number;
@@ -11,21 +11,20 @@ interface Props {
   scale?: number;
 }
 
-const WING_PALETTE = { W: '#dbe7ff' };
 const HALO = '#ffd166';
 
-/** 씬 안에서 떠다니는 AI 로봇 (티어별 외형 변화) */
+/** 씬 안에서 떠다니는 AI 로봇 (티어가 오를수록 날개·후광·보조 에이전트가 늘어난다) */
 export const AiRobot = memo(function AiRobot({ tier, color, x, y, working, scale = 2 }: Props) {
   const palette = robotPalette(color);
-  const w = 12 * scale;
-  const h = 14 * scale;
+  const w = 16 * scale;
+  const h = 18 * scale;
   const hasWings = tier >= 4;
   const hasHalo = tier >= 6;
-  const minis = tier >= 6 ? 3 : tier >= 5 ? 2 : 0;
+  const minis = tier >= 6 ? 2 : tier >= 5 ? 1 : 0;
   return (
-    <g className={`orb-anim ${working ? '' : ''}`} style={{ transformBox: 'fill-box' }}>
-      {/* 빛 */}
-      <ellipse cx={x + w / 2} cy={y + h + 4} rx={w * 0.55} ry={3} fill={color} opacity={0.25} className="anim-pulse-glow svg-anim" />
+    <g className="orb-anim" style={{ transformBox: 'fill-box' }}>
+      {/* 발광 + 접지 그림자 */}
+      <ellipse cx={x + w / 2} cy={y + h / 2} rx={w * 0.7} ry={h * 0.6} fill={color} opacity={0.06} className="core-anim svg-anim" />
       {hasWings && (
         <g className={working ? 'hand-anim' : ''}>
           <PixelSprite inline rows={WING_ROWS} palette={WING_PALETTE} scale={scale} x={x - 8 * scale + 2} y={y + 3 * scale} />
@@ -36,26 +35,22 @@ export const AiRobot = memo(function AiRobot({ tier, color, x, y, working, scale
       )}
       {hasHalo && (
         <g>
-          <rect x={x + 2 * scale} y={y - 3 * scale} width={8 * scale} height={scale} fill={HALO} />
-          <rect x={x + scale} y={y - 2 * scale} width={scale} height={scale} fill={HALO} />
-          <rect x={x + 10 * scale} y={y - 2 * scale} width={scale} height={scale} fill={HALO} />
+          <rect x={x + 4 * scale} y={y - 4 * scale} width={8 * scale} height={scale} fill={HALO} />
+          <rect x={x + 3 * scale} y={y - 3 * scale} width={scale} height={scale} fill={HALO} />
+          <rect x={x + 12 * scale} y={y - 3 * scale} width={scale} height={scale} fill={HALO} />
         </g>
       )}
       <PixelSprite inline rows={ROBOT_ROWS} palette={palette} scale={scale} x={x} y={y} />
-      {working && (
-        <g>
-          <rect x={x + 4 * scale} y={y + 6 * scale} width={4 * scale} height={scale} fill="#7cf0ff" className="anim-blink" />
-        </g>
-      )}
+      {working && <rect x={x + 5 * scale} y={y + 9 * scale} width={6 * scale} height={scale} fill="#7cf0ff" className="anim-blink" />}
       {Array.from({ length: minis }).map((_, i) => (
-        <g key={i} className="orb-anim" style={{ animationDelay: `${0.5 + i * 0.4}s`, transformBox: 'fill-box' }}>
+        <g key={i} className="orb-anim" style={{ animationDelay: `${0.5 + i * 0.5}s`, transformBox: 'fill-box' }}>
           <PixelSprite
             inline
             rows={MINI_ROBOT_ROWS}
             palette={robotPalette(i % 2 ? '#c792ea' : color)}
             scale={Math.max(1, scale - 1)}
-            x={x - 10 - i * 12}
-            y={y + 18 + (i % 2) * 10}
+            x={x - 14 - i * 4}
+            y={y + 26 + i * 14}
           />
         </g>
       ))}

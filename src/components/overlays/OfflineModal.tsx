@@ -18,10 +18,10 @@ export function OfflineModal() {
           <div className="text-pixel text-[10px] tracking-[0.2em] text-[#8ab8ff]">WELCOME BACK</div>
           <h3 className="mt-1 text-lg font-black">부재중 동안 ZUN이 벌어들인 수익</h3>
           <p className="text-[11px] text-ink-soft">{formatDuration(report.seconds)} 동안 열심히 개발했어요! (효율 {Math.round(report.efficiency * 100)}%)</p>
-          <div className="relative mx-auto my-3 flex h-24 items-end justify-center">
+          <div className="relative mx-auto my-3 flex h-32 items-end justify-center">
             <span className="absolute left-[30%] top-0 text-lg anim-drift">💤</span>
             <span className="absolute left-[36%] top-3 text-sm anim-drift" style={{ animationDelay: '0.7s' }}>z</span>
-            <ZunSprite mood="happy" scale={4} />
+            <ZunSprite mood="happy" scale={3} />
           </div>
           <div className="grid gap-2">
             <Reward icon="💰" label="수익" value={<AnimatedNumber value={report.money} format={formatMoney} speed={0.08} className="text-[#ffd06a]" />} />
