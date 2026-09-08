@@ -1,11 +1,11 @@
-export type Tab = 'home' | 'projects' | 'upgrades' | 'ai' | 'stats' | 'settings';
+export type Tab = 'home' | 'projects' | 'upgrades' | 'ai' | 'growth' | 'settings';
 
 export const TABS: { id: Tab; icon: string; label: string }[] = [
   { id: 'home', icon: '🏠', label: '홈' },
   { id: 'projects', icon: '📋', label: '프로젝트' },
   { id: 'upgrades', icon: '⬆️', label: '업그레이드' },
   { id: 'ai', icon: '🤖', label: 'AI' },
-  { id: 'stats', icon: '📊', label: '통계' },
+  { id: 'growth', icon: '🏆', label: '성장' },
   { id: 'settings', icon: '⚙️', label: '설정' },
 ];
 
@@ -20,6 +20,7 @@ export function BottomNav({ tab, onChange, badges }: { tab: Tab; onChange: (t: T
               key={t.id}
               type="button"
               onClick={() => onChange(t.id)}
+              data-tut={`tab-${t.id}`}
               className={`relative flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-colors ${active ? 'text-[#8ab8ff]' : 'text-ink-muted'}`}
             >
               <span className={`text-lg transition-transform ${active ? 'scale-110' : ''}`}>{t.icon}</span>
@@ -44,6 +45,7 @@ export function SideTabs({ tab, onChange, badges }: { tab: Tab; onChange: (t: Ta
             key={t.id}
             type="button"
             onClick={() => onChange(t.id)}
+            data-tut={`tab-${t.id}`}
             className={`btn-press relative flex flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-lg px-1.5 py-2 text-[11px] font-bold transition-colors lg:text-xs ${active ? 'bg-card-2 text-white shadow' : 'text-ink-muted hover:text-ink-soft'}`}
           >
             <span>{t.icon}</span>

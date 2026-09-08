@@ -10,6 +10,7 @@ export function TopBar() {
   const level = useGame((s) => s.level);
   const xp = useGame((s) => s.xp);
   const effects = useGame((s) => s.effects);
+  const insight = useGame((s) => s.insight);
   const income = useDerived((d) => d.incomePerSec);
   const maxUsers = useDerived((d) => d.maxUsers);
   const xpToNext = useDerived((d) => d.xpToNext);
@@ -32,7 +33,7 @@ export function TopBar() {
 
         {/* 자원 */}
         <div className="flex min-w-0 flex-1 items-stretch gap-1.5 md:gap-2">
-          <Stat icon="💰" label="자금" main={<AnimatedNumber value={money} format={formatMoney} className="text-[#ffd06a]" />} sub={<span className="text-[#5ee596]">+{formatRate(income)}</span>} />
+          <Stat tut="stat-money" icon="💰" label="자금" main={<AnimatedNumber value={money} format={formatMoney} className="text-[#ffd06a]" />} sub={<span className="text-[#5ee596]">+{formatRate(income)}</span>} />
           <Stat
             icon="👥"
             label="사용자"
@@ -43,7 +44,7 @@ export function TopBar() {
             icon="⚡"
             label="개발력"
             main={<span className="tnum text-[#b9a6ff]">x{devSpeed.toFixed(1)}</span>}
-            sub={<span>Lv.{level} {levelTitle(level)}</span>}
+            sub={insight > 0 ? <span className="text-[#b9a6ff]">💡 인사이트 {insight}</span> : <span>Lv.{level} {levelTitle(level)}</span>}
             className="hidden sm:flex"
           />
         </div>
@@ -69,9 +70,9 @@ export function TopBar() {
   );
 }
 
-function Stat({ icon, label, main, sub, className = '' }: { icon: string; label: string; main: React.ReactNode; sub: React.ReactNode; className?: string }) {
+function Stat({ icon, label, main, sub, className = '', tut }: { icon: string; label: string; main: React.ReactNode; sub: React.ReactNode; className?: string; tut?: string }) {
   return (
-    <div className={`card-2 flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1 md:px-3 ${className}`}>
+    <div data-tut={tut} className={`card-2 flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1 md:px-3 ${className}`}>
       <span className="text-base md:text-lg">{icon}</span>
       <div className="flex min-w-0 flex-col leading-tight">
         <span className="text-[9px] font-bold uppercase tracking-wide text-ink-muted">{label}</span>

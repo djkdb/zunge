@@ -1,6 +1,7 @@
 import type { Derived, GameState, ProjectDef } from './types';
 import {
-  DEV_SPEED_PER_LEVEL, OFFLINE_BASE_CAP_HOURS, OFFLINE_BASE_EFFICIENCY,
+  ACHIEVEMENT_INCOME_PER, DEV_SPEED_PER_LEVEL, INSIGHT_DEV_PER, INSIGHT_INCOME_PER,
+  INSIGHT_DIVISOR, INSIGHT_POW, OFFLINE_BASE_CAP_HOURS, OFFLINE_BASE_EFFICIENCY,
   PROJECT_VERSION_COST_MULT, PROJECT_VERSION_INCOME_MULT, PROJECT_VERSION_TIME_MULT,
   PROJECT_VERSION_USERS_MULT, PROJECT_VERSION_XP_MULT, USER_GROWTH_DIVISOR, USER_INCOME_COEF, USER_INCOME_LOG_FACTOR, USER_INCOME_POW, xpToNext,
 } from './constants';
@@ -57,10 +58,18 @@ export function maxUsersFor(serverLevel: number): number {
   return Math.floor(UPGRADE_EFFECT.serverBaseUsers * Math.pow(UPGRADE_EFFECT.serverMult, serverLevel));
 }
 
+/** 이번 회차 수익을 리부트 시 받게 될 인사이트로 환산 */
+export function insightFor(runEarned: number): number {
+  if (runEarned <= 0) return 0;
+  return Math.floor(Math.pow(runEarned / INSIGHT_DIVISOR, INSIGHT_POW));
+}
+
 export function computeDerived(state: GameState, now = Date.now()): Derived {
   const ai = aiTier(state.aiTier);
   const stage = stageDef(state.stage);
   const u = state.upgrades;
+  const legacyIncomeMult = (1 + state.insight * INSIGHT_INCOME_PER) * (1 + state.achievements.length * ACHIEVEMENT_INCOME_PER);
+  const legacyDevMult = 1 + state.insight * INSIGHT_DEV_PER;
 
   const devSpeed =
     (1 + u.pc * UPGRADE_EFFECT.pcSpeedPerLevel) *
@@ -68,6 +77,7 @@ export function computeDerived(state: GameState, now = Date.now()): Derived {
     stage.devSpeedMult *
     (1 + (state.level - 1) * DEV_SPEED_PER_LEVEL) *
     (1 + u.team * UPGRADE_EFFECT.teamSpeedPerLevel) *
+    legacyDevMult *
     effectMult(state, 'devSpeed', now);
 
   const incomeMult =
@@ -75,6 +85,7 @@ export function computeDerived(state: GameState, now = Date.now()): Derived {
     stage.incomeMult *
     (1 + u.automation * UPGRADE_EFFECT.automationIncomePerLevel) *
     (1 + u.team * UPGRADE_EFFECT.teamIncomePerLevel) *
+    legacyIncomeMult *
     effectMult(state, 'income', now);
 
   let projectIncomeBase = 0;
@@ -110,6 +121,8 @@ export function computeDerived(state: GameState, now = Date.now()): Derived {
     offlineCapHours,
     xpToNext: xpToNext(state.level),
     incomeMult,
+    legacyIncomeMult,
+    legacyDevMult,
   };
 }
 

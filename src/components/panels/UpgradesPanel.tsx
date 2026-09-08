@@ -1,6 +1,7 @@
 import { useDerived, useGame } from '../../hooks/useGame';
 import { actions } from '../../game/store';
-import { UPGRADES, upgradeCost } from '../../game/data/upgrades';
+import { UPGRADES } from '../../game/data/upgrades';
+import { bulkUpgradeCost } from '../../game/engine';
 import { STAGES } from '../../game/data/stages';
 import { formatMoney } from '../../game/format';
 import { Button } from '../ui/Button';
@@ -14,19 +15,35 @@ export function UpgradesPanel() {
   const stage = useGame((s) => s.stage);
   const offlineEff = useDerived((d) => d.offlineEfficiency);
   const offlineCap = useDerived((d) => d.offlineCapHours);
+  const buyMode = useGame((s) => s.settings.buyMode);
+  const state = useGame((s) => s);
 
   const nextStage = STAGES.find((s) => s.stage === stage + 1);
   const curStage = STAGES[stage - 1];
 
   return (
     <div className="flex flex-col gap-3">
-      <div>
-        <h2 className="text-base font-black">업그레이드</h2>
-        <p className="text-[11px] text-ink-soft">장비를 강화하고 공간을 넓혀 성장 속도를 올리세요. 오프라인 효율 {Math.round(offlineEff * 100)}% · 최대 {offlineCap}시간</p>
+      <div className="flex items-end justify-between gap-2">
+        <div>
+          <h2 className="text-base font-black">업그레이드</h2>
+          <p className="text-[11px] text-ink-soft">오프라인 효율 {Math.round(offlineEff * 100)}% · 최대 {offlineCap}시간</p>
+        </div>
+        <div data-tut="buy-mode" className="flex shrink-0 rounded-lg bg-bg-2 p-0.5 text-[11px] font-bold">
+          {([[1, 'x1'], [10, 'x10'], [-1, 'MAX']] as const).map(([m, l]) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => actions.setBuyMode(m)}
+              className={`rounded-md px-2 py-1 ${buyMode === m ? 'bg-card-2 text-white' : 'text-ink-muted'}`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* 공간 확장 */}
-      <div className="card relative overflow-hidden p-3">
+      <div data-tut="stage-card" className="card relative overflow-hidden p-3">
         <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-violet/20 blur-2xl" />
         <div className="flex items-start gap-2.5">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-bg-2 text-2xl">{nextStage ? nextStage.icon : curStage.icon}</div>
@@ -69,8 +86,12 @@ export function UpgradesPanel() {
           const lv = upgrades[u.id];
           const maxed = lv >= u.maxLevel;
           const locked = level < u.requiredLevel;
-          const cost = maxed ? 0 : upgradeCost(u, lv);
-          const can = !locked && !maxed && money >= cost;
+          const bulk = bulkUpgradeCost(state, u.id, buyMode);
+          // MAX 모드에서 한 단계도 못 사면 1단계 가격을 안내한다
+          const single = bulkUpgradeCost(state, u.id, 1);
+          const count = bulk.count > 0 ? bulk.count : single.count;
+          const cost = bulk.count > 0 ? bulk.cost : single.cost;
+          const can = !locked && !maxed && count > 0 && money >= cost;
           return (
             <div key={u.id} className={`card anim-slide-up flex flex-col gap-2 p-3 ${locked ? 'opacity-70' : ''}`} style={{ animationDelay: `${i * 40}ms` }}>
               <div className="flex items-start gap-2.5">
@@ -86,15 +107,15 @@ export function UpgradesPanel() {
               <ProgressBar value={lv / u.maxLevel} color="bg-gradient-to-r from-primary to-violet" height={5} />
               <div className="grid grid-cols-1 gap-0.5 text-[11px]">
                 <div className="flex justify-between gap-2"><span className="shrink-0 whitespace-nowrap text-ink-muted">현재</span><span className="text-right font-bold">{u.effectLabel(lv)}</span></div>
-                {!maxed && <div className="flex justify-between gap-2"><span className="shrink-0 whitespace-nowrap text-ink-muted">다음</span><span className="text-right font-bold text-[#5ee596]">{u.effectLabel(lv + 1)}</span></div>}
+                {!maxed && <div className="flex justify-between gap-2"><span className="shrink-0 whitespace-nowrap text-ink-muted">{count > 1 ? `+${count}레벨` : '다음'}</span><span className="text-right font-bold text-[#5ee596]">{u.effectLabel(Math.min(u.maxLevel, lv + Math.max(1, count)))}</span></div>}
               </div>
               {locked ? (
                 <div className="rounded-lg bg-bg-2 px-2.5 py-1.5 text-center text-[11px] font-bold text-ink-soft">레벨 {u.requiredLevel} 필요</div>
               ) : maxed ? (
                 <div className="rounded-lg bg-gold-soft px-2.5 py-1.5 text-center text-[11px] font-bold text-[#ffd06a]">최대 레벨 달성</div>
               ) : (
-                <Button block disabled={!can} onClick={() => actions.buyUpgrade(u.id)}>
-                  ⬆️ 업그레이드 · {formatMoney(cost)}
+                <Button block disabled={!can} onClick={() => actions.buyUpgrade(u.id, buyMode)}>
+                  ⬆️ 업그레이드{count > 1 ? ` x${count}` : ''} · {formatMoney(cost)}
                 </Button>
               )}
             </div>

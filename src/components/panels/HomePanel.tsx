@@ -1,5 +1,5 @@
 import { useDerived, useGame, useUi } from '../../hooks/useGame';
-import { nextGoal } from '../../game/engine';
+import { dailyAvailable, nextGoal } from '../../game/engine';
 import { formatMoney, formatRate } from '../../game/format';
 import { ProgressBar } from '../ui/ProgressBar';
 import type { Tab } from '../layout/BottomNav';
@@ -17,6 +17,7 @@ export function HomePanel({ onTab }: { onTab: (t: Tab) => void }) {
   const income = useDerived((d) => d.incomePerSec);
   const logs = useUi((u) => u.logs);
   const goal = useMemo(() => nextGoal(state), [state]);
+  const dailyOpen = dailyAvailable(state, Date.now());
 
   // 지금 바로 시작할 수 있는 가장 좋은 프로젝트
   const quick = useMemo(() => {
@@ -62,10 +63,11 @@ export function HomePanel({ onTab }: { onTab: (t: Tab) => void }) {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2 md:hidden">
+      <div className="grid grid-cols-4 gap-2 md:hidden">
         <QuickBtn icon="📋" label="프로젝트" onClick={() => onTab('projects')} />
         <QuickBtn icon="⬆️" label="업그레이드" onClick={() => onTab('upgrades')} />
         <QuickBtn icon="🤖" label="AI" onClick={() => onTab('ai')} />
+        <QuickBtn icon="🏆" label="성장" onClick={() => onTab('growth')} badge={dailyOpen} />
       </div>
 
       <div className="card p-3">
@@ -83,11 +85,12 @@ export function HomePanel({ onTab }: { onTab: (t: Tab) => void }) {
   );
 }
 
-function QuickBtn({ icon, label, onClick }: { icon: string; label: string; onClick: () => void }) {
+function QuickBtn({ icon, label, onClick, badge }: { icon: string; label: string; onClick: () => void; badge?: boolean }) {
   return (
-    <button type="button" onClick={onClick} className="btn-press card flex flex-col items-center gap-1 py-3 text-xs font-bold text-ink-soft hover:text-ink">
+    <button type="button" onClick={onClick} className="btn-press card relative flex flex-col items-center gap-1 py-3 text-[11px] font-bold text-ink-soft hover:text-ink">
       <span className="text-xl">{icon}</span>
       {label}
+      {badge && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-coral shadow-[0_0_8px_rgba(255,122,89,0.9)]" />}
     </button>
   );
 }

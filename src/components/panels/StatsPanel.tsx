@@ -7,7 +7,7 @@ import { projectIncomeAt } from '../../game/calc';
 import { formatDuration, formatMoney, formatNumber, formatRate, formatUsers } from '../../game/format';
 import { Badge } from '../ui/Badge';
 
-export function StatsPanel() {
+export function StatsPanel({ embedded = false }: { embedded?: boolean } = {}) {
   const stats = useGame((s) => s.stats);
   const level = useGame((s) => s.level);
   const stage = useGame((s) => s.stage);
@@ -22,10 +22,12 @@ export function StatsPanel() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div>
-        <h2 className="text-base font-black">통계</h2>
-        <p className="text-[11px] text-ink-soft">ZUN의 개발자 여정 · {days}일째 · Lv.{level} {levelTitle(level)}</p>
-      </div>
+      {!embedded && (
+        <div>
+          <h2 className="text-base font-black">통계</h2>
+          <p className="text-[11px] text-ink-soft">ZUN의 개발자 여정 · {days}일째 · Lv.{level} {levelTitle(level)}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Tile icon="💰" label="총 수익" value={formatMoney(stats.totalEarned)} />
@@ -37,6 +39,9 @@ export function StatsPanel() {
         <Tile icon="🎲" label="발생한 이벤트" value={`${stats.eventsTriggered}회`} />
         <Tile icon="⏱️" label="플레이 시간" value={formatDuration(stats.playTime)} />
         <Tile icon="💤" label="오프라인 수익" value={formatMoney(stats.offlineEarned)} />
+        <Tile icon="✨" label="황금 버그" value={`${stats.goldenBugs}마리`} />
+        <Tile icon="🎁" label="출석 보상" value={`${stats.dailyClaims}회`} />
+        <Tile icon="☕" label="부스트 사용" value={`${stats.boostsUsed}회`} />
       </div>
 
       <div className="card p-3">

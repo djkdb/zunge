@@ -1,14 +1,20 @@
-import type { ActiveEffect, GameEventDef, GameState, Settings, Stats, UpgradeId } from './types';
+import type { AchievementDef, ActiveEffect, BuyMode, GameEventDef, GameState, Settings, Stats, UpgradeId } from './types';
 import {
-  BUG_PROGRESS_PENALTY, EVENT_MAX_INTERVAL_SEC, EVENT_MIN_INTERVAL_SEC, MAX_LEVEL, SAVE_VERSION, START_MONEY, xpToNext,
+  ACHIEVEMENT_INCOME_PER, AUTODEV_UNLOCK_LEVEL, BOOST_COOLDOWN_SEC, BOOST_DURATION_SEC, BOOST_MULT, BOOST_UNLOCK_LEVEL,
+  BUG_PROGRESS_PENALTY, DAILY_BASE_SECONDS, DAILY_MAX_STREAK, DAILY_MIN_MONEY, DAILY_STREAK_SECONDS,
+  EVENT_MAX_INTERVAL_SEC, EVENT_MIN_INTERVAL_SEC, GOLDEN_MIN_MONEY, GOLDEN_REWARD_SECONDS,
+  MAX_LEVEL, PRESTIGE_MIN_EARNED, PRESTIGE_MIN_LEVEL, SAVE_VERSION, START_MONEY, dateKey, isNextDay, xpToNext,
 } from './constants';
-import { PROJECT_MAP } from './data/projects';
+import { ACHIEVEMENTS } from './data/achievements';
+import { PROJECTS, PROJECT_MAP } from './data/projects';
+
+const PROJECT_COUNT = PROJECTS.length;
 import { UPGRADE_MAP, upgradeCost } from './data/upgrades';
 import { AI_TIERS, aiTier } from './data/ai';
 import { STAGES, stageDef } from './data/stages';
 import { EVENTS } from './data/events';
 import {
-  computeDerived, failChance, isProjectUnlocked, launchBonus, projectCost, projectDevTime, projectUsersAt, projectVersion, projectXpAt,
+  computeDerived, failChance, insightFor, isProjectUnlocked, launchBonus, projectCost, projectDevTime, projectUsersAt, projectVersion, projectXpAt,
 } from './calc';
 
 /** 엔진이 UI에 알리는 신호 */
@@ -23,7 +29,12 @@ export type Signal =
   | { type: 'ai'; tier: number }
   | { type: 'stage'; stage: number }
   | { type: 'error'; message: string }
-  | { type: 'tap'; money: number };
+  | { type: 'tap'; money: number }
+  | { type: 'achievement'; def: AchievementDef; money: number }
+  | { type: 'boost' }
+  | { type: 'golden'; money: number }
+  | { type: 'daily'; money: number; streak: number }
+  | { type: 'prestige'; insight: number };
 
 export interface TickResult {
   state: GameState;
@@ -46,13 +57,68 @@ export function createInitialState(now = Date.now()): GameState {
     lastSavedAt: now,
     lastEventAt: now,
     createdAt: now,
-    settings: { sound: true, reducedMotion: false },
+    settings: { sound: true, reducedMotion: false, buyMode: 1 },
     stats: {
       totalEarned: 0, totalSpent: 0, projectsCompleted: 0, bugsFixed: 0, eventsTriggered: 0,
       playTime: 0, bestIncome: 0, peakUsers: 0, offlineEarned: 0,
+      goldenBugs: 0, dailyClaims: 0, boostsUsed: 0,
     },
     seenStage: 1,
+    seenTutorials: [],
+    achievements: [],
+    insight: 0,
+    prestigeCount: 0,
+    runEarned: 0,
+    lastDailyDate: '',
+    dailyStreak: 0,
+    boostReadyAt: 0,
+    autoDev: false,
   };
+}
+
+// ───────────── 업적 ─────────────
+
+function achievementProgress(state: GameState, def: AchievementDef): number {
+  switch (def.metric) {
+    case 'projects': return state.stats.projectsCompleted;
+    case 'users': return state.stats.peakUsers;
+    case 'money': return state.stats.totalEarned;
+    case 'level': return state.level;
+    case 'aiTier': return state.aiTier;
+    case 'stage': return state.stage;
+    case 'bugs': return state.stats.bugsFixed;
+    case 'events': return state.stats.eventsTriggered;
+    case 'offline': return state.stats.offlineEarned > 0 ? 1 : 0;
+    case 'prestige': return state.prestigeCount;
+    case 'golden': return state.stats.goldenBugs;
+    case 'team': return state.upgrades.team;
+    case 'allProjects': return Object.values(state.projectLevels).filter((v) => v > 0).length >= PROJECT_COUNT ? 1 : 0;
+    case 'maxUpgrade': return (Object.keys(state.upgrades) as UpgradeId[]).some((id) => state.upgrades[id] >= UPGRADE_MAP[id].maxLevel) ? 1 : 0;
+  }
+}
+
+export function achievementRatio(state: GameState, def: AchievementDef): number {
+  return Math.min(1, achievementProgress(state, def) / def.goal);
+}
+
+/** 새로 달성한 업적을 지급한다 */
+function grantAchievements(state: GameState, now: number, signals: Signal[]): GameState {
+  let next = state;
+  for (const def of ACHIEVEMENTS) {
+    if (next.achievements.includes(def.id)) continue;
+    if (achievementProgress(next, def) < def.goal) continue;
+    const d = computeDerived(next, now);
+    const money = Math.max(1000, Math.round(d.incomePerSec * def.rewardSeconds));
+    next = {
+      ...next,
+      achievements: [...next.achievements, def.id],
+      money: next.money + money,
+      runEarned: next.runEarned + money,
+      stats: { ...next.stats, totalEarned: next.stats.totalEarned + money },
+    };
+    signals.push({ type: 'achievement', def, money });
+  }
+  return next;
 }
 
 function withStats(state: GameState, patch: Partial<Stats>): GameState {
@@ -138,7 +204,7 @@ export function tick(state: GameState, dt: number, now: number, opts: TickOption
   // 수익
   if (d.incomePerSec > 0) {
     const gained = d.incomePerSec * dt * incomeMult;
-    next = { ...next, money: next.money + gained };
+    next = { ...next, money: next.money + gained, runEarned: next.runEarned + gained };
     next = withStats(next, { totalEarned: next.stats.totalEarned + gained });
     signals.push({ type: 'income', amount: gained });
   }
@@ -174,6 +240,7 @@ export function tick(state: GameState, dt: number, now: number, opts: TickOption
         next = {
           ...next,
           money: next.money + bonus,
+          runEarned: next.runEarned + bonus,
           projectLevels: { ...next.projectLevels, [def.id]: newVersion },
         };
         next = addUsers(next, users);
@@ -209,7 +276,39 @@ export function tick(state: GameState, dt: number, now: number, opts: TickOption
   if (next.users > next.stats.peakUsers) stats.peakUsers = next.users;
   if (Object.keys(stats).length) next = withStats(next, stats);
 
+  // 자동 개발: 빈 슬롯을 가장 비싼(=수익 좋은) 프로젝트로 채운다
+  if (next.autoDev) next = runAutoDev(next, now, signals);
+
+  next = grantAchievements(next, now, signals);
+
   return { state: next, signals };
+}
+
+/** 자동 개발: 여유 슬롯에 지금 감당 가능한 가장 비싼 프로젝트를 착수한다 */
+function runAutoDev(state: GameState, now: number, signals: Signal[]): GameState {
+  let next = state;
+  let guard = 0;
+  while (guard < 8) {
+    guard += 1;
+    const d = computeDerived(next, now);
+    if (next.activeDevs.length >= d.slots) break;
+    const candidates = PROJECTS.filter(
+      (p) => isProjectUnlocked(next, p)
+        && !next.activeDevs.some((a) => a.projectId === p.id)
+        && projectCost(p, projectVersion(next, p.id), d.costMult) <= next.money,
+    );
+    if (!candidates.length) break;
+    // 남은 자금의 절반 이상을 쓰는 선택은 피해 성장 자금을 남긴다
+    const affordable = candidates.filter((p) => projectCost(p, projectVersion(next, p.id), d.costMult) <= next.money * 0.5);
+    const pool = affordable.length ? affordable : candidates;
+    const best = pool.reduce((a, b) =>
+      projectCost(b, projectVersion(next, b.id), d.costMult) > projectCost(a, projectVersion(next, a.id), d.costMult) ? b : a);
+    const r = startProject(next, best.id, now);
+    if (r.state === next) break;
+    next = r.state;
+    signals.push(...r.signals.filter((sig) => sig.type !== 'projectStart'));
+  }
+  return next;
 }
 
 /** 이벤트 간격: 마지막 이벤트 시각을 시드로 안정적으로 결정 (틱마다 값이 흔들리지 않도록) */
@@ -252,22 +351,24 @@ export function cancelProject(state: GameState, projectId: string): TickResult {
   };
 }
 
-export function buyUpgrade(state: GameState, id: UpgradeId): TickResult {
+export function buyUpgrade(state: GameState, id: UpgradeId, mode: BuyMode = 1): TickResult {
   const def = UPGRADE_MAP[id];
   const level = state.upgrades[id];
   if (level >= def.maxLevel) return { state, signals: [{ type: 'error', message: '최대 레벨입니다.' }] };
   if (state.level < def.requiredLevel) return { state, signals: [{ type: 'error', message: `레벨 ${def.requiredLevel}부터 구매할 수 있습니다.` }] };
-  const cost = upgradeCost(def, level);
-  if (state.money < cost) return { state, signals: [{ type: 'error', message: '자금이 부족합니다.' }] };
+  const { count, cost } = bulkUpgradeCost(state, id, mode);
+  if (count <= 0 || state.money < cost) return { state, signals: [{ type: 'error', message: '자금이 부족합니다.' }] };
   const signals: Signal[] = [];
   let next: GameState = {
     ...state,
     money: state.money - cost,
-    upgrades: { ...state.upgrades, [id]: level + 1 },
+    upgrades: { ...state.upgrades, [id]: level + count },
   };
   next = withStats(next, { totalSpent: next.stats.totalSpent + cost });
-  signals.push({ type: 'upgrade', id, level: level + 1 });
-  next = grantXp(next, 10 + 8 * (level + 1), signals);
+  signals.push({ type: 'upgrade', id, level: level + count });
+  let xp = 0;
+  for (let i = 1; i <= count; i += 1) xp += 10 + 8 * (level + i);
+  next = grantXp(next, xp, signals);
   return { state: next, signals };
 }
 
@@ -354,3 +455,157 @@ export function nextGoal(state: GameState): Goal | null {
 }
 
 export { aiTier, stageDef };
+
+// ───────────── 방치형 편의 기능 ─────────────
+
+/** 업그레이드를 n단계 살 때의 총 비용과 실제 구매 가능 단계 수 */
+export function bulkUpgradeCost(state: GameState, id: UpgradeId, mode: BuyMode): { count: number; cost: number } {
+  const def = UPGRADE_MAP[id];
+  const start = state.upgrades[id];
+  if (state.level < def.requiredLevel) return { count: 0, cost: 0 };
+  const limit = mode === -1 ? def.maxLevel - start : Math.min(mode, def.maxLevel - start);
+  let cost = 0;
+  let count = 0;
+  for (let i = 0; i < limit; i += 1) {
+    const c = upgradeCost(def, start + i);
+    if (mode === -1 && cost + c > state.money) break;
+    cost += c;
+    count += 1;
+  }
+  return { count, cost };
+}
+
+/** 부스트를 지금 쓸 수 있는지 */
+export function boostReady(state: GameState, now: number): boolean {
+  return state.level >= BOOST_UNLOCK_LEVEL && now >= state.boostReadyAt;
+}
+
+export function useBoost(state: GameState, now: number): TickResult {
+  if (state.level < BOOST_UNLOCK_LEVEL) {
+    return { state, signals: [{ type: 'error', message: `레벨 ${BOOST_UNLOCK_LEVEL}부터 사용할 수 있습니다.` }] };
+  }
+  if (now < state.boostReadyAt) {
+    const left = Math.ceil((state.boostReadyAt - now) / 1000);
+    return { state, signals: [{ type: 'error', message: `${left}초 후에 다시 사용할 수 있습니다.` }] };
+  }
+  const effect: ActiveEffect = {
+    eventId: 'boost', icon: '☕', title: '커피 부스트',
+    kind: 'income', mult: BOOST_MULT, endsAt: now + BOOST_DURATION_SEC * 1000,
+  };
+  const next: GameState = {
+    ...state,
+    effects: [...state.effects.filter((e) => e.eventId !== 'boost'), effect],
+    boostReadyAt: now + BOOST_COOLDOWN_SEC * 1000,
+    stats: { ...state.stats, boostsUsed: state.stats.boostsUsed + 1 },
+  };
+  return { state: next, signals: [{ type: 'boost' }] };
+}
+
+/** 오늘 받을 수 있는 일일 보상이 남아 있는지 */
+export function dailyAvailable(state: GameState, now: number): boolean {
+  return state.lastDailyDate !== dateKey(now);
+}
+
+export function dailyReward(state: GameState, now: number): { money: number; streak: number } {
+  const today = dateKey(now);
+  const streak = Math.min(DAILY_MAX_STREAK, isNextDay(state.lastDailyDate, today) ? state.dailyStreak + 1 : 1);
+  const d = computeDerived(state, now);
+  const seconds = DAILY_BASE_SECONDS + (streak - 1) * DAILY_STREAK_SECONDS;
+  const money = Math.max(DAILY_MIN_MONEY, Math.round(d.incomePerSec * seconds));
+  return { money, streak };
+}
+
+export function claimDaily(state: GameState, now: number): TickResult {
+  if (!dailyAvailable(state, now)) {
+    return { state, signals: [{ type: 'error', message: '오늘 보상은 이미 받았습니다.' }] };
+  }
+  const { money, streak } = dailyReward(state, now);
+  const signals: Signal[] = [];
+  let next: GameState = {
+    ...state,
+    money: state.money + money,
+    runEarned: state.runEarned + money,
+    lastDailyDate: dateKey(now),
+    dailyStreak: streak,
+    stats: { ...state.stats, totalEarned: state.stats.totalEarned + money, dailyClaims: state.stats.dailyClaims + 1 },
+  };
+  signals.push({ type: 'daily', money, streak });
+  next = grantAchievements(next, now, signals);
+  return { state: next, signals };
+}
+
+/** 황금 버그를 잡았을 때의 보상 */
+export function catchGolden(state: GameState, now: number): TickResult {
+  const d = computeDerived(state, now);
+  const money = Math.max(GOLDEN_MIN_MONEY, Math.round(d.incomePerSec * GOLDEN_REWARD_SECONDS));
+  const signals: Signal[] = [];
+  let next: GameState = {
+    ...state,
+    money: state.money + money,
+    runEarned: state.runEarned + money,
+    stats: { ...state.stats, totalEarned: state.stats.totalEarned + money, goldenBugs: state.stats.goldenBugs + 1 },
+  };
+  signals.push({ type: 'golden', money });
+  next = grantAchievements(next, now, signals);
+  return { state: next, signals };
+}
+
+// ───────────── 리부트(프레스티지) ─────────────
+
+export function prestigeUnlocked(state: GameState): boolean {
+  return state.prestigeCount > 0 || (state.level >= PRESTIGE_MIN_LEVEL && state.runEarned >= PRESTIGE_MIN_EARNED);
+}
+
+/** 지금 리부트하면 얻는 인사이트 */
+export function prestigeGain(state: GameState): number {
+  return Math.max(0, insightFor(state.runEarned) - 0);
+}
+
+export function canPrestige(state: GameState): boolean {
+  return prestigeUnlocked(state) && prestigeGain(state) >= 1;
+}
+
+/** 진행도를 초기화하고 인사이트를 얻는다. 업적·튜토리얼·설정·통계는 유지된다. */
+export function prestige(state: GameState, now: number): TickResult {
+  if (!canPrestige(state)) {
+    return { state, signals: [{ type: 'error', message: '아직 리부트할 수 없습니다.' }] };
+  }
+  const gain = prestigeGain(state);
+  const fresh = createInitialState(now);
+  const next: GameState = {
+    ...fresh,
+    settings: state.settings,
+    stats: { ...state.stats },
+    seenTutorials: state.seenTutorials,
+    achievements: state.achievements,
+    insight: state.insight + gain,
+    prestigeCount: state.prestigeCount + 1,
+    runEarned: 0,
+    lastDailyDate: state.lastDailyDate,
+    dailyStreak: state.dailyStreak,
+    createdAt: state.createdAt,
+    lastSavedAt: now,
+    lastEventAt: now,
+  };
+  const signals: Signal[] = [{ type: 'prestige', insight: gain }];
+  return { state: grantAchievements(next, now, signals), signals };
+}
+
+/** 튜토리얼을 본 것으로 표시 */
+export function markTutorialSeen(state: GameState, id: string): GameState {
+  if (state.seenTutorials.includes(id)) return state;
+  return { ...state, seenTutorials: [...state.seenTutorials, id] };
+}
+
+export function setAutoDev(state: GameState, on: boolean): GameState {
+  return { ...state, autoDev: on };
+}
+
+export function autoDevUnlocked(state: GameState): boolean {
+  return state.level >= AUTODEV_UNLOCK_LEVEL;
+}
+
+/** 업적으로 얻은 영구 수익 보너스 (표시용) */
+export function achievementIncomeBonus(state: GameState): number {
+  return state.achievements.length * ACHIEVEMENT_INCOME_PER;
+}

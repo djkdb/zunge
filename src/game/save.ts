@@ -5,6 +5,11 @@ import { PROJECT_MAP } from './data/projects';
 import { UPGRADE_MAP } from './data/upgrades';
 import { AI_TIERS } from './data/ai';
 import { STAGES } from './data/stages';
+import { ACHIEVEMENTS } from './data/achievements';
+import { TUTORIALS } from './data/tutorials';
+
+const ACHIEVEMENT_IDS = new Set(ACHIEVEMENTS.map((a) => a.id));
+const TUTORIAL_IDS = new Set(TUTORIALS.map((t) => t.id));
 
 const num = (v: unknown, fallback: number, min = 0, max = Number.MAX_VALUE): number => {
   if (typeof v !== 'number' || !Number.isFinite(v)) return fallback;
@@ -82,6 +87,7 @@ export function sanitize(raw: unknown, now = Date.now()): GameState {
     settings: {
       sound: bool(settings.sound, true),
       reducedMotion: bool(settings.reducedMotion, false),
+      buyMode: ([1, 10, -1] as const).includes(settings.buyMode as 1) ? (settings.buyMode as 1 | 10 | -1) : 1,
     },
     stats: {
       totalEarned: num(stats.totalEarned, 0),
@@ -93,9 +99,31 @@ export function sanitize(raw: unknown, now = Date.now()): GameState {
       bestIncome: num(stats.bestIncome, 0),
       peakUsers: num(stats.peakUsers, 0),
       offlineEarned: num(stats.offlineEarned, 0),
+      goldenBugs: Math.floor(num(stats.goldenBugs, 0)),
+      dailyClaims: Math.floor(num(stats.dailyClaims, 0)),
+      boostsUsed: Math.floor(num(stats.boostsUsed, 0)),
     },
     seenStage: Math.floor(num(r.seenStage, stage, 1, STAGES.length)),
+    seenTutorials: strList(r.seenTutorials, TUTORIAL_IDS),
+    achievements: strList(r.achievements, ACHIEVEMENT_IDS),
+    insight: Math.floor(num(r.insight, 0)),
+    prestigeCount: Math.floor(num(r.prestigeCount, 0)),
+    runEarned: num(r.runEarned, num(stats.totalEarned, 0)),
+    lastDailyDate: typeof r.lastDailyDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.lastDailyDate) ? r.lastDailyDate : '',
+    dailyStreak: Math.floor(num(r.dailyStreak, 0, 0, 999)),
+    boostReadyAt: num(r.boostReadyAt, 0),
+    autoDev: bool(r.autoDev, false),
   };
+}
+
+/** 알려진 id 만 남기고 중복을 제거한다 */
+function strList(v: unknown, allowed: Set<string>): string[] {
+  if (!Array.isArray(v)) return [];
+  const out: string[] = [];
+  for (const item of v) {
+    if (typeof item === 'string' && allowed.has(item) && !out.includes(item)) out.push(item);
+  }
+  return out;
 }
 
 function storage(): Storage | null {

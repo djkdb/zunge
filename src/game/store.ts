@@ -1,9 +1,13 @@
-import type { GameState, LogEntry, Mood, OfflineReport, Settings, UpgradeId } from './types';
-import { AUTOSAVE_MS, OFFLINE_THRESHOLD_SEC, TICK_MS } from './constants';
+import type { BuyMode, GameState, LogEntry, Mood, OfflineReport, Settings, UpgradeId } from './types';
+import {
+  AUTOSAVE_MS, GOLDEN_LIFETIME_SEC, GOLDEN_MAX_INTERVAL_SEC, GOLDEN_MIN_INTERVAL_SEC, OFFLINE_THRESHOLD_SEC, TICK_MS,
+} from './constants';
 import { createStore } from './createStore';
 import {
-  buyAi, buyStage, buyUpgrade, cancelProject, createInitialState, markStageSeen, startProject, tapZun, tick, updateSettings, type Signal,
+  buyAi, buyStage, buyUpgrade, cancelProject, catchGolden, claimDaily, createInitialState, dailyAvailable, markStageSeen,
+  markTutorialSeen, prestige, setAutoDev, startProject, tapZun, tick, updateSettings, useBoost, type Signal,
 } from './engine';
+import { TUTORIAL_MAP, pendingTutorial } from './data/tutorials';
 import { clearSave, exportSave, importSave, loadGame, saveGame } from './save';
 import { simulateOffline } from './offline';
 import { PROJECT_MAP } from './data/projects';
@@ -39,6 +43,15 @@ export interface Toast {
   tone: 'good' | 'bad' | 'neutral';
 }
 
+/** 화면에 떠 있는 황금 버그 */
+export interface GoldenBug {
+  id: number;
+  /** 씬 기준 위치 (%) */
+  x: number;
+  y: number;
+  expiresAt: number;
+}
+
 export interface UiState {
   mood: Mood;
   logs: LogEntry[];
@@ -47,6 +60,13 @@ export interface UiState {
   offlineReport: OfflineReport | null;
   levelUpTo: number | null;
   stageIntro: number | null;
+  /** 재생 중인 튜토리얼 id */
+  tutorial: string | null;
+  /** 튜토리얼 내 현재 단계 */
+  tutorialStep: number;
+  dailyOpen: boolean;
+  prestigeResult: number | null;
+  golden: GoldenBug | null;
   lastSaveAt: number;
   ready: boolean;
 }
@@ -59,9 +79,23 @@ export const uiStore = createStore<UiState>({
   offlineReport: null,
   levelUpTo: null,
   stageIntro: null,
+  tutorial: null,
+  tutorialStep: 0,
+  dailyOpen: false,
+  prestigeResult: null,
+  golden: null,
   lastSaveAt: 0,
   ready: false,
 });
+
+/** 튜토리얼이 탭 이동을 요청할 때 App 이 구독하는 콜백 */
+let tabRequestHandler: ((tab: string) => void) | null = null;
+export function onTabRequest(fn: ((tab: string) => void) | null): void {
+  tabRequestHandler = fn;
+}
+export function requestTab(tab: string): void {
+  tabRequestHandler?.(tab);
+}
 
 let idSeq = 1;
 const nextId = () => idSeq++;
@@ -99,7 +133,7 @@ export function pushLog(icon: string, text: string, tone: LogEntry['tone'] = 'ne
 
 export function pushToast(icon: string, title: string, message: string, tone: Toast['tone'] = 'neutral', ms = 4200): void {
   const id = nextId();
-  uiStore.set((u) => ({ ...u, toasts: [...u.toasts, { id, icon, title, message, tone }].slice(-3) }));
+  uiStore.set((u) => ({ ...u, toasts: [...u.toasts, { id, icon, title, message, tone }].slice(-2) }));
   setTimeout(() => uiStore.set((u) => ({ ...u, toasts: u.toasts.filter((t) => t.id !== id) })), ms);
 }
 
@@ -211,6 +245,42 @@ function handleSignals(signals: Signal[], now: number): void {
         sfx.tap();
         break;
       }
+      case 'achievement': {
+        pushLog('🏆', `업적 달성: ${s.def.name} (+${formatMoney(s.money)})`, 'good');
+        pushToast(s.def.icon, `업적 달성! ${s.def.name}`, `보너스 +${formatMoney(s.money)} · 영구 수익 +1%`, 'good', 3800);
+        pushFloat(`🏆 +${formatMoney(s.money)}`, 'good', 50, 42);
+        setMood('confident', 2500);
+        sfx.levelUp();
+        break;
+      }
+      case 'boost': {
+        pushLog('☕', '커피 부스트! 60초 동안 수익 2배', 'good');
+        pushFloat('☕ x2!', 'good', 50, 40);
+        setMood('confident', 2000);
+        sfx.buy();
+        break;
+      }
+      case 'golden': {
+        pushLog('✨', `황금 버그를 잡았습니다! +${formatMoney(s.money)}`, 'good');
+        pushToast('✨', '황금 버그 포획!', `보너스 +${formatMoney(s.money)}`, 'good', 3000);
+        pushFloat(`+${formatMoney(s.money)}`, 'money', 50, 40);
+        setMood('shock', 2500);
+        sfx.coin();
+        break;
+      }
+      case 'daily': {
+        pushLog('🎁', `${s.streak}일 연속 출석 보상 +${formatMoney(s.money)}`, 'good');
+        setMood('happy', 2500);
+        sfx.complete();
+        break;
+      }
+      case 'prestige': {
+        pushLog('🔄', `회사를 리부트했습니다. 인사이트 +${s.insight}`, 'good');
+        uiStore.set((u) => ({ ...u, prestigeResult: s.insight }));
+        setMood('confident', 4000);
+        sfx.stage();
+        break;
+      }
     }
   }
 }
@@ -229,10 +299,80 @@ export const actions = {
     pushLog('↩️', `${PROJECT_MAP[id].name} 개발을 취소했습니다. (비용 50% 환불)`);
     refreshBaseMood();
   },
-  buyUpgrade(id: UpgradeId): void {
-    const r = buyUpgrade(gameStore.get(), id);
+  buyUpgrade(id: UpgradeId, mode: BuyMode = gameStore.get().settings.buyMode): void {
+    const r = buyUpgrade(gameStore.get(), id, mode);
     gameStore.set(r.state);
     handleSignals(r.signals, Date.now());
+  },
+  setBuyMode(mode: BuyMode): void {
+    gameStore.set((st) => updateSettings(st, { buyMode: mode }));
+  },
+  useBoost(): void {
+    const r = useBoost(gameStore.get(), Date.now());
+    gameStore.set(r.state);
+    handleSignals(r.signals, Date.now());
+  },
+  openDaily(): void {
+    uiStore.set((u) => ({ ...u, dailyOpen: true }));
+  },
+  closeDaily(): void {
+    uiStore.set((u) => ({ ...u, dailyOpen: false }));
+  },
+  claimDaily(): void {
+    const r = claimDaily(gameStore.get(), Date.now());
+    gameStore.set(r.state);
+    handleSignals(r.signals, Date.now());
+    save();
+  },
+  catchGolden(): void {
+    if (!uiStore.get().golden) return;
+    uiStore.set((u) => ({ ...u, golden: null }));
+    const r = catchGolden(gameStore.get(), Date.now());
+    gameStore.set(r.state);
+    handleSignals(r.signals, Date.now());
+  },
+  setAutoDev(on: boolean): void {
+    gameStore.set((st) => setAutoDev(st, on));
+    pushLog('🔁', on ? '자동 개발을 켰습니다.' : '자동 개발을 껐습니다.');
+    save();
+  },
+  prestige(): void {
+    const r = prestige(gameStore.get(), Date.now());
+    gameStore.set(r.state);
+    handleSignals(r.signals, Date.now());
+    save();
+  },
+  closePrestigeResult(): void {
+    uiStore.set((u) => ({ ...u, prestigeResult: null }));
+  },
+  nextTutorialStep(): void {
+    const u = uiStore.get();
+    if (!u.tutorial) return;
+    const def = TUTORIAL_MAP[u.tutorial];
+    const step = u.tutorialStep + 1;
+    if (!def || step >= def.steps.length) {
+      gameStore.set((st) => markTutorialSeen(st, u.tutorial as string));
+      uiStore.set((x) => ({ ...x, tutorial: null, tutorialStep: 0 }));
+      save();
+      return;
+    }
+    uiStore.set((x) => ({ ...x, tutorialStep: step }));
+    const target = def.steps[step]?.tab;
+    if (target) requestTab(target);
+  },
+  skipTutorial(): void {
+    const u = uiStore.get();
+    if (!u.tutorial) return;
+    gameStore.set((st) => markTutorialSeen(st, u.tutorial as string));
+    uiStore.set((x) => ({ ...x, tutorial: null, tutorialStep: 0 }));
+    save();
+  },
+  /** 설정에서 모든 튜토리얼 다시 보기 */
+  resetTutorials(): void {
+    gameStore.set((st) => ({ ...st, seenTutorials: [] }));
+    uiStore.set((u) => ({ ...u, tutorial: null, tutorialStep: 0 }));
+    pushToast('📘', '튜토리얼 초기화', '처음부터 다시 안내해 드릴게요.', 'good', 2500);
+    save();
   },
   buyAi(): void {
     const r = buyAi(gameStore.get());
@@ -272,7 +412,10 @@ export const actions = {
     clearSave();
     const fresh = createInitialState();
     gameStore.set(fresh);
-    uiStore.set((u) => ({ ...u, logs: [], toasts: [], floats: [], offlineReport: null, levelUpTo: null, stageIntro: null, mood: 'idle' }));
+    uiStore.set((u) => ({
+      ...u, logs: [], toasts: [], floats: [], offlineReport: null, levelUpTo: null,
+      stageIntro: null, tutorial: null, tutorialStep: 0, dailyOpen: false, prestigeResult: null, golden: null, mood: 'idle',
+    }));
     pushLog('🌱', '새로운 시작! ZUN의 자취방에서 다시 출발합니다.');
     save();
   },
@@ -304,6 +447,46 @@ let loopHandle: ReturnType<typeof setInterval> | null = null;
 let lastTick = 0;
 let lastSave = 0;
 let booted = false;
+let nextGoldenAt = 0;
+
+function scheduleGolden(now: number): void {
+  nextGoldenAt = now + (GOLDEN_MIN_INTERVAL_SEC + Math.random() * (GOLDEN_MAX_INTERVAL_SEC - GOLDEN_MIN_INTERVAL_SEC)) * 1000;
+}
+
+/** 황금 버그 등장/소멸 관리 */
+function updateGolden(now: number): void {
+  const ui = uiStore.get();
+  if (ui.golden) {
+    if (ui.golden.expiresAt <= now) uiStore.set((u) => ({ ...u, golden: null }));
+    return;
+  }
+  if (now < nextGoldenAt) return;
+  scheduleGolden(now);
+  // 아직 수익이 없으면 등장시키지 않는다
+  if (derivedStore.get().incomePerSec <= 0) return;
+  uiStore.set((u) => ({
+    ...u,
+    golden: {
+      id: Date.now(),
+      x: 10 + Math.random() * 76,
+      y: 22 + Math.random() * 46,
+      expiresAt: now + GOLDEN_LIFETIME_SEC * 1000,
+    },
+  }));
+}
+
+/** 조건이 충족된 튜토리얼을 자동으로 재생 */
+function updateTutorial(): void {
+  if (uiStore.get().tutorial) return;
+  // 다른 모달이 떠 있으면 순서를 양보한다
+  const ui = uiStore.get();
+  if (ui.offlineReport || ui.levelUpTo || ui.stageIntro || ui.dailyOpen || ui.prestigeResult) return;
+  const id = pendingTutorial(gameStore.get());
+  if (!id) return;
+  uiStore.set((u) => ({ ...u, tutorial: id, tutorialStep: 0 }));
+  const first = TUTORIAL_MAP[id]?.steps[0]?.tab;
+  if (first) requestTab(first);
+}
 
 function applyOffline(now: number): void {
   const { state, report } = simulateOffline(gameStore.get(), now);
@@ -330,9 +513,13 @@ export function bootGame(): void {
     pushLog('🌱', '작은 자취방에서 ZUN의 개발자 인생이 시작됩니다. 첫 프로젝트를 만들어보세요!');
     save();
   }
+  if (dailyAvailable(gameStore.get(), now) && gameStore.get().stats.projectsCompleted > 0) {
+    uiStore.set((u) => ({ ...u, dailyOpen: true }));
+  }
   uiStore.set((u) => ({ ...u, ready: true, mood: baseMood(gameStore.get()) }));
   lastTick = now;
   lastSave = now;
+  scheduleGolden(now);
 
   loopHandle = setInterval(() => {
     const t = Date.now();
@@ -349,6 +536,8 @@ export function bootGame(): void {
     gameStore.set(r.state);
     handleSignals(r.signals, t);
     refreshBaseMood();
+    updateGolden(t);
+    updateTutorial();
     if (t - lastSave > AUTOSAVE_MS) {
       lastSave = t;
       save();

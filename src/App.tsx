@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { bootGame } from './game/store';
+import { bootGame, onTabRequest } from './game/store';
 import { useDerived, useGame, useUi } from './hooks/useGame';
 import { TopBar } from './components/layout/TopBar';
 import { BottomNav, SideTabs, type Tab } from './components/layout/BottomNav';
@@ -8,12 +8,15 @@ import { HomePanel } from './components/panels/HomePanel';
 import { ProjectsPanel } from './components/panels/ProjectsPanel';
 import { UpgradesPanel } from './components/panels/UpgradesPanel';
 import { AiPanel } from './components/panels/AiPanel';
-import { StatsPanel } from './components/panels/StatsPanel';
+import { GrowthPanel } from './components/panels/GrowthPanel';
 import { SettingsPanel } from './components/panels/SettingsPanel';
 import { Toasts } from './components/overlays/Toasts';
 import { OfflineModal } from './components/overlays/OfflineModal';
 import { LevelUpModal } from './components/overlays/LevelUpModal';
 import { StageIntro } from './components/overlays/StageIntro';
+import { TutorialOverlay } from './components/overlays/TutorialOverlay';
+import { DailyBonusModal } from './components/overlays/DailyBonusModal';
+import { PrestigeResultModal } from './components/overlays/PrestigeResultModal';
 import { PROJECTS } from './game/data/projects';
 import { UPGRADES, upgradeCost } from './game/data/upgrades';
 import { AI_TIERS } from './game/data/ai';
@@ -27,6 +30,12 @@ export default function App() {
 
   useEffect(() => {
     bootGame();
+  }, []);
+
+  // 튜토리얼이 특정 탭으로 이동을 요청할 때 따라간다
+  useEffect(() => {
+    onTabRequest((t) => setTab(t as Tab));
+    return () => onTabRequest(null);
   }, []);
 
   useEffect(() => {
@@ -77,7 +86,7 @@ export default function App() {
             {tab === 'projects' && <ProjectsPanel />}
             {tab === 'upgrades' && <UpgradesPanel />}
             {tab === 'ai' && <AiPanel />}
-            {tab === 'stats' && <StatsPanel />}
+            {tab === 'growth' && <GrowthPanel />}
             {tab === 'settings' && <SettingsPanel />}
           </div>
         </section>
@@ -87,6 +96,9 @@ export default function App() {
       <OfflineModal />
       <LevelUpModal />
       <StageIntro />
+      <DailyBonusModal />
+      <PrestigeResultModal />
+      <TutorialOverlay />
     </div>
   );
 }

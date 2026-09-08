@@ -45,3 +45,57 @@ export function xpToNext(level: number): number {
   if (level >= MAX_LEVEL) return Infinity;
   return Math.floor(100 * Math.pow(level, 2.1) + 50 * level);
 }
+
+// ───────── 리부트(프레스티지) ─────────
+/** 리부트 해금 조건 */
+export const PRESTIGE_MIN_LEVEL = 20;
+export const PRESTIGE_MIN_EARNED = 1e10;
+/** 인사이트 환산: (이번 회차 수익 / DIVISOR) ^ POW */
+export const INSIGHT_DIVISOR = 1e10;
+export const INSIGHT_POW = 0.45;
+/** 인사이트 1당 영구 보너스 */
+export const INSIGHT_INCOME_PER = 0.03;
+export const INSIGHT_DEV_PER = 0.012;
+/** 업적 1개당 영구 수익 보너스 */
+export const ACHIEVEMENT_INCOME_PER = 0.01;
+
+// ───────── 일일 보상 ─────────
+/** 연속 출석 최대 배율 단계 */
+export const DAILY_MAX_STREAK = 7;
+/** 기본 보상: 초당 수익 × 이 초 수 (연속일수에 비례해 증가) */
+export const DAILY_BASE_SECONDS = 600;
+export const DAILY_STREAK_SECONDS = 300;
+/** 신규 플레이어를 위한 최소 보상 */
+export const DAILY_MIN_MONEY = 2000;
+
+// ───────── 부스트 ─────────
+export const BOOST_DURATION_SEC = 60;
+export const BOOST_COOLDOWN_SEC = 300;
+export const BOOST_MULT = 2;
+export const BOOST_UNLOCK_LEVEL = 2;
+
+// ───────── 황금 버그 ─────────
+export const GOLDEN_MIN_INTERVAL_SEC = 100;
+export const GOLDEN_MAX_INTERVAL_SEC = 210;
+/** 화면에 머무는 시간 */
+export const GOLDEN_LIFETIME_SEC = 9;
+/** 보상: 초당 수익 × 이 초 수 */
+export const GOLDEN_REWARD_SECONDS = 180;
+export const GOLDEN_MIN_MONEY = 500;
+
+// ───────── 자동 개발 ─────────
+export const AUTODEV_UNLOCK_LEVEL = 16;
+
+/** 로컬 기준 YYYY-MM-DD */
+export function dateKey(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** a 다음 날이 b 인지 (연속 출석 판정) */
+export function isNextDay(prev: string, next: string): boolean {
+  if (!prev) return false;
+  const p = new Date(`${prev}T00:00:00`);
+  const n = new Date(`${next}T00:00:00`);
+  return Math.round((n.getTime() - p.getTime()) / 86400000) === 1;
+}

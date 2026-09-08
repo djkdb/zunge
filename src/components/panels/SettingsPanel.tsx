@@ -40,6 +40,12 @@ export function SettingsPanel() {
       </div>
 
       <div className="card flex flex-col gap-2 p-3">
+        <div className="text-xs font-black">📘 튜토리얼</div>
+        <p className="text-[11px] text-ink-soft">첫 안내와 기능별 설명을 처음부터 다시 볼 수 있습니다.</p>
+        <Button variant="secondary" onClick={() => actions.resetTutorials()}>튜토리얼 다시 보기</Button>
+      </div>
+
+      <div className="card flex flex-col gap-2 p-3">
         <div className="text-xs font-black">💾 저장 데이터</div>
         <div className="grid grid-cols-2 gap-2">
           <Button variant="secondary" onClick={() => { actions.save(); pushToast('💾', '저장 완료', '진행 상황이 저장되었습니다.', 'good', 1800); }}>지금 저장</Button>

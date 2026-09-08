@@ -8,6 +8,7 @@ import { PROJECT_MAP } from '../../game/data/projects';
 import { projectDevTime, projectVersion } from '../../game/calc';
 import { formatDurationShort } from '../../game/format';
 import { RoomScene } from './RoomScene';
+import { GoldenBugOverlay, SceneActions } from './SceneActions';
 import { ProgressBar } from '../ui/ProgressBar';
 import { Badge } from '../ui/Badge';
 import type { Mood } from '../../game/types';
@@ -111,10 +112,13 @@ export function SceneView({ compact = false, onGoProjects }: { compact?: boolean
 
       {/* ZUN 말풍선 */}
       {!compact && (
-        <div key={`${mood}-${lineIdx}`} className="anim-pop pointer-events-none absolute left-[55%] top-[16%] max-w-[40%] rounded-xl rounded-bl-none bg-white px-2.5 py-1.5 text-[11px] font-bold text-navy-deep shadow-lg md:text-xs">
+        <div key={`${mood}-${lineIdx}`} className="anim-pop pointer-events-none absolute left-[50%] top-[26%] max-w-[42%] rounded-xl rounded-bl-none bg-white px-2.5 py-1.5 text-[11px] font-bold text-navy-deep shadow-lg md:text-xs">
           {zunLine}
         </div>
       )}
+
+      <SceneActions />
+      <GoldenBugOverlay />
 
       {/* 플로팅 텍스트 */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">

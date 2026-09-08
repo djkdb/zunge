@@ -4,6 +4,8 @@ import { actions } from '../../game/store';
 import { PROJECTS, TIER_LABEL } from '../../game/data/projects';
 import { aiTier } from '../../game/data/ai';
 import { failChance, projectCost, projectDevTime, projectIncomeAt, projectUsersAt, projectXpAt } from '../../game/calc';
+import { autoDevUnlocked } from '../../game/engine';
+import { AUTODEV_UNLOCK_LEVEL } from '../../game/constants';
 import { formatDuration, formatMoney, formatRate, formatUsers } from '../../game/format';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
@@ -22,6 +24,9 @@ export function ProjectsPanel() {
   const slots = useDerived((d) => d.slots);
   const successBonus = useDerived((d) => d.successBonus);
   const [filter, setFilter] = useState<'all' | 'available' | 'launched'>('all');
+  const state = useGame((s) => s);
+  const autoDev = useGame((s) => s.autoDev);
+  const autoUnlocked = autoDevUnlocked(state);
 
   const list = useMemo(() => {
     return PROJECTS.filter((p) => {
@@ -46,6 +51,27 @@ export function ProjectsPanel() {
           ))}
         </div>
       </div>
+      {autoUnlocked ? (
+        <button
+          type="button"
+          data-tut="autodev-toggle"
+          onClick={() => actions.setAutoDev(!autoDev)}
+          className={`btn-press flex items-center justify-between rounded-xl px-3 py-2.5 text-left ${autoDev ? 'bg-mint-soft' : 'card'}`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🔁</span>
+            <div>
+              <div className="text-xs font-black">자동 개발 {autoDev ? 'ON' : 'OFF'}</div>
+              <div className="text-[11px] text-ink-soft">빈 슬롯에 가장 비싼 프로젝트를 알아서 착수합니다</div>
+            </div>
+          </div>
+          <span className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${autoDev ? 'bg-mint' : 'bg-white/15'}`}>
+            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${autoDev ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+          </span>
+        </button>
+      ) : (
+        <div className="card px-3 py-2 text-[11px] font-bold text-ink-soft">🔒 자동 개발은 레벨 {AUTODEV_UNLOCK_LEVEL}에 해금됩니다</div>
+      )}
       <div className="grid gap-2.5 sm:grid-cols-2">
         {list.map((p, i) => (
           <ProjectCard
