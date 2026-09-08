@@ -63,7 +63,7 @@ export default function App() {
               <SceneView compact={tab !== 'home'} onGoProjects={() => setTab('projects')} />
             </div>
             <div className="hidden md:block">
-              <SceneView onGoProjects={() => setTab('projects')} />
+              <SceneView desktop onGoProjects={() => setTab('projects')} />
             </div>
           </div>
           <div className="hidden md:mt-4 md:block">

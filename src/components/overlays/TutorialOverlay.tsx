@@ -103,7 +103,7 @@ export function TutorialOverlay() {
         <div className="card anim-pop w-full max-w-sm p-4">
           <div className="flex items-start gap-3">
             <div className="shrink-0">
-              <ZunSprite mood={last ? 'confident' : 'happy'} scale={2} />
+              <ZunSprite mood={last ? 'confident' : 'happy'} scale={1} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">

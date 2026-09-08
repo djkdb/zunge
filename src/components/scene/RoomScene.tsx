@@ -18,38 +18,51 @@ interface Props {
   aiColor: string;
   teamCount: number;
   pets: string[];
-  /** 컴팩트 모드: 책상 주변만 보여주는 좁은 뷰 */
-  compact?: boolean;
+  /**
+   * 화면 크기에 따른 카메라.
+   * full = 방 전체(데스크톱), mobile = 책상 중심으로 당김, compact = 책상 주변만
+   */
+  zoom?: 'full' | 'mobile' | 'compact';
 }
 
+/** zoom 별 viewBox — 각 컨테이너의 종횡비에 맞춰 잡았다 */
+const VIEW_BOX: Record<'full' | 'mobile' | 'compact', string> = {
+  full: '0 0 320 200',
+  mobile: '34 28 252 158',
+  compact: '44 38 232 101',
+};
+
 // ───────── 레이아웃 상수 (viewBox 320 x 200) ─────────
-const ZUN_X = 128;
-const ZUN_Y = 48;
-const ZUN_SCALE = 2;
+// 픽셀이 뭉개지지 않도록 스프라이트는 항상 정수 배율로만 그린다
+const ZUN_SCALE = 1;
+const ZUN_X = 136;   // 가로 중심 160 기준 (48폭)
+const ZUN_Y = 72;    // 상반신 42행 → 책상 상판(114)에 딱 맞음
 
-const DESK_X = 96;
-const DESK_W = 148;
-const DESK_Y = 118;
+const DESK_X = 104;
+const DESK_W = 116;
+const DESK_Y = 114;
 
-const KEYBOARD_X = 142;
-const KEYBOARD_Y = 116;
-const HANDS_X = 148;
-const HANDS_Y = 111;
+const KEYBOARD_X = 146;
+const KEYBOARD_Y = 112;
+const HANDS_X = 150;
+const HANDS_Y = 108;
 
 const ROBOT_X = 88;
-const ROBOT_Y = 46;
+const ROBOT_Y = 62;
 
 /** 팀원 자리: [책상 x, 책상 y, 스케일] — 뒤로 갈수록 작게 그려 원근을 만든다 */
-const TEAM_SEATS: [number, number, number][] = [
-  [2, 130, 2],
-  [266, 130, 2],
-  [44, 100, 1.5],
-  [238, 100, 1.5],
+/** 팀원 자리: [책상 x, 책상 상판 y] — 뒤쪽 자리는 높게 두어 원근을 만든다 */
+const TEAM_SEATS: [number, number][] = [
+  [4, 128],
+  [274, 128],
+  [46, 102],
+  [232, 102],
 ];
+const TEAM_DESK_W = 42;
 
 /** 펫이 앉는 바닥 위치 (중심 x, 바닥 y, 스케일) — 하단 HUD를 가리지 않는 띠 안에 둔다 */
 const PET_SPOTS: [number, number, number][] = [
-  [110, 159, 2], [172, 152, 1.5], [228, 159, 2], [276, 152, 1.5], [304, 158, 2], [146, 151, 1.5],
+  [104, 157, 1], [146, 149, 1], [192, 157, 1], [236, 149, 1], [278, 157, 1], [120, 149, 1],
 ];
 
 const MOOD_CLASS: Record<Mood, string> = {
@@ -85,15 +98,15 @@ function Workstation({ stage, uid, typing, dark, ultrawide, extraMonitor, lamp }
       />
       {dark && <LedStrip x={DESK_X + 4} y={DESK_Y + 9} w={DESK_W - 8} color="#4f8dff" />}
       {ultrawide ? (
-        <Monitor x={186} y={70} w={56} h={42} active={typing} thin bezel="#0b0f1e" ultrawide uid={uid} />
+        <Monitor x={186} y={80} w={34} h={26} active={typing} thin bezel="#0b0f1e" ultrawide uid={uid} />
       ) : (
-        <Monitor x={192} y={72} w={48} h={38} active={typing} thin={stage >= 2} bezel={dark ? '#0b0f1e' : stage === 1 ? '#cfc7b2' : '#171b2c'} uid={uid} />
+        <Monitor x={188} y={82} w={32} h={24} active={typing} thin={stage >= 2} bezel={dark ? '#0b0f1e' : stage === 1 ? '#cfc7b2' : '#171b2c'} uid={uid} />
       )}
-      {extraMonitor && <Monitor x={98} y={82} w={30} h={28} active={typing} thin bezel={dark ? '#0b0f1e' : '#171b2c'} uid={uid} />}
-      {lamp && <Lamp x={98} y={94} on />}
-      <Cup x={110} y={108} />
-      <Books x={122} y={107} />
-      <Keyboard x={KEYBOARD_X} y={KEYBOARD_Y} w={36} rgb={stage >= 2} />
+      {extraMonitor && <Monitor x={106} y={86} w={24} h={20} active={typing} thin bezel={dark ? '#0b0f1e' : '#171b2c'} uid={uid} />}
+      {lamp && <Lamp x={110} y={92} on />}
+      <Cup x={112} y={105} />
+      <Books x={122} y={104} />
+      <Keyboard x={KEYBOARD_X} y={KEYBOARD_Y} w={28} rgb={stage >= 2} />
       <Hands x={HANDS_X} y={HANDS_Y} typing={typing} />
     </g>
   );
@@ -104,10 +117,10 @@ function TeamSeats({ count, max, dark, typing, uid }: { count: number; max: numb
   if (n <= 0) return null;
   return (
     <g>
-      {TEAM_SEATS.slice(0, n).map(([dx, dy, s], i) => (
+      {TEAM_SEATS.slice(0, n).map(([dx, dy], i) => (
         <g key={i}>
-          <Teammate x={dx + 4 * s} y={dy - 18 * s} index={i} typing={typing} />
-          <SmallDesk x={dx} y={dy} w={24 * s} s={s} active={typing} dark={dark} uid={uid} />
+          <Teammate x={dx + 7} y={dy - 32} index={i} typing={typing} />
+          <SmallDesk x={dx} y={dy} w={TEAM_DESK_W} active={typing} dark={dark} uid={uid} />
         </g>
       ))}
     </g>
@@ -140,13 +153,13 @@ function Stage1({ mood, typing, theme, uid }: { mood: Mood; typing: boolean; the
   return (
     <g>
       <Wall uid={uid} theme={theme} />
-      <Window x={20} y={20} w={62} h={50} night />
-      <Shelf x={252} y={42} w={60} />
-      <Bed x={4} y={122} />
-      <Plant x={286} y={104} />
+      <Window x={22} y={26} w={52} h={42} night />
+      <Shelf x={258} y={54} w={50} />
+      <Bed x={0} y={124} />
+      <Plant x={288} y={122} />
       <Zun mood={mood} typing={typing} />
       <Workstation stage={1} uid={uid} typing={typing} lamp />
-      <PcTower x={250} y={140} w={16} h={34} />
+      <PcTower x={232} y={132} w={13} h={26} />
     </g>
   );
 }
@@ -230,14 +243,14 @@ function Stage5({ mood, typing, team, theme, aiColor, uid }: { mood: Mood; typin
   );
 }
 
-export const RoomScene = memo(function RoomScene({ stage, mood, typing, aiTier, aiColor, teamCount, pets, compact }: Props) {
+export const RoomScene = memo(function RoomScene({ stage, mood, typing, aiTier, aiColor, teamCount, pets, zoom = 'full' }: Props) {
   const s = Math.min(5, Math.max(1, stage));
   const theme = SCENE_THEMES[s];
   // 모바일/데스크톱 두 씬이 동시에 존재하므로 그라디언트 id를 인스턴스마다 분리한다
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   return (
     <svg
-      viewBox={compact ? '0 30 320 142' : '0 0 320 200'}
+      viewBox={VIEW_BOX[zoom]}
       className="pixel h-full w-full"
       preserveAspectRatio="xMidYMid slice"
       aria-label="ZUN의 개발 공간"
@@ -249,8 +262,8 @@ export const RoomScene = memo(function RoomScene({ stage, mood, typing, aiTier, 
       {s === 4 && <Stage4 mood={mood} typing={typing} team={teamCount} theme={theme} uid={uid} />}
       {s === 5 && <Stage5 mood={mood} typing={typing} team={teamCount} theme={theme} aiColor={aiColor} uid={uid} />}
       <Pets pets={pets} />
-      <Glow x={ROBOT_X + 16} y={ROBOT_Y + 18} r={20} uid={uid} />
-      <AiRobot tier={aiTier} color={aiColor} x={ROBOT_X} y={ROBOT_Y} working={typing} />
+      <Glow x={ROBOT_X + 8} y={ROBOT_Y + 9} r={13} uid={uid} />
+      <AiRobot tier={aiTier} color={aiColor} x={ROBOT_X} y={ROBOT_Y} working={typing} scale={1} />
       <Vignette uid={uid} />
     </svg>
   );

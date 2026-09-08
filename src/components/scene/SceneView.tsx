@@ -33,7 +33,7 @@ const ZUN_LINES: Record<Mood, string[]> = {
 
 const AI_LINES = ['코드 생성 중', '테스트 작성 중', '버그 분석 중', '리팩토링 중', '배포 준비 중', 'API 연동 중', 'UI 구성 중'];
 
-export function SceneView({ compact = false, onGoProjects }: { compact?: boolean; onGoProjects: () => void }) {
+export function SceneView({ compact = false, desktop = false, onGoProjects }: { compact?: boolean; desktop?: boolean; onGoProjects: () => void }) {
   const stage = useGame((s) => s.stage);
   const level = useGame((s) => s.level);
   const aiT = useGame((s) => s.aiTier);
@@ -60,6 +60,8 @@ export function SceneView({ compact = false, onGoProjects }: { compact?: boolean
   const zunLine = ZUN_LINES[mood][lineIdx % ZUN_LINES[mood].length];
   const aiLine = AI_LINES[lineIdx % AI_LINES.length];
 
+  const zoom = desktop ? 'full' : compact ? 'compact' : 'mobile';
+
   const [rings, setRings] = useState<number[]>([]);
   const tap = () => {
     actions.tapZun();
@@ -72,7 +74,7 @@ export function SceneView({ compact = false, onGoProjects }: { compact?: boolean
 
   return (
     <div className={`relative w-full overflow-hidden ${compact ? 'aspect-[16/7]' : 'aspect-[16/10]'} bg-navy-deep select-none`}>
-      <RoomScene stage={stage} mood={mood} typing={typing} aiTier={aiT} aiColor={ai.color} teamCount={team} pets={pets} compact={compact} />
+      <RoomScene stage={stage} mood={mood} typing={typing} aiTier={aiT} aiColor={ai.color} teamCount={team} pets={pets} zoom={zoom} />
 
       {/* 탭 영역 (ZUN) */}
       <button

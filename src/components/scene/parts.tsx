@@ -189,14 +189,14 @@ export function Hands({ x, y, typing }: { x: number; y: number; typing: boolean 
   return (
     <g>
       <g className={typing ? 'hand-anim' : ''}>
-        <R x={x} y={y} w={9} h={5} c="#f7d3af" />
-        <R x={x} y={y} w={9} h={2} c="#ffe4c4" />
-        <R x={x} y={y + 5} w={9} h={1} c="#0a0d1a" opacity={0.5} />
+        <R x={x} y={y} w={7} h={4} c="#fbdcbb" />
+        <R x={x} y={y} w={7} h={2} c="#fff1de" />
+        <R x={x} y={y + 4} w={7} h={1} c="#151a2b" opacity={0.55} />
       </g>
       <g className={typing ? 'hand-anim' : ''} style={{ animationDelay: '0.12s' }}>
-        <R x={x + 15} y={y} w={9} h={5} c="#f7d3af" />
-        <R x={x + 15} y={y} w={9} h={2} c="#ffe4c4" />
-        <R x={x + 15} y={y + 5} w={9} h={1} c="#0a0d1a" opacity={0.5} />
+        <R x={x + 13} y={y} w={7} h={4} c="#fbdcbb" />
+        <R x={x + 13} y={y} w={7} h={2} c="#fff1de" />
+        <R x={x + 13} y={y + 4} w={7} h={1} c="#151a2b" opacity={0.55} />
       </g>
     </g>
   );
@@ -465,15 +465,15 @@ export function Teammate({ x, y, index, typing }: { x: number; y: number; index:
   const [hair, shirt] = TEAMMATE_STYLES[index % TEAMMATE_STYLES.length];
   return (
     <g className={typing ? 'anim-typing svg-bottom' : 'anim-bob svg-bottom'} style={{ animationDelay: `${index * 0.35}s` }}>
-      <PixelSprite inline rows={TEAMMATE_ROWS} palette={teammatePalette(hair, shirt)} scale={2} x={x} y={y} />
+      <PixelSprite inline rows={TEAMMATE_ROWS} palette={teammatePalette(hair, shirt)} scale={1} x={x} y={y} />
     </g>
   );
 }
 
-export function SmallDesk({ x, y, w, s = 2, active, dark, uid }: { x: number; y: number; w: number; s?: number; active: boolean; dark?: boolean; uid: string }) {
+export function SmallDesk({ x, y, w, active, dark, uid }: { x: number; y: number; w: number; active: boolean; dark?: boolean; uid: string }) {
   return (
     <g>
-      <Monitor x={x + w / 2 - 6 * s} y={y - 11 * s} w={12 * s} h={8 * s} active={active} thin bezel={dark ? '#0b0f1e' : '#171b2c'} uid={uid} />
+      <Monitor x={x + w / 2 - 8} y={y - 14} w={16} h={11} active={active} thin bezel={dark ? '#0b0f1e' : '#171b2c'} uid={uid} />
       <Desk x={x} w={w} y={y} color={dark ? '#232a45' : '#dbe1ee'} top={dark ? '#333d63' : '#f4f6fb'} legs={dark ? '#151a30' : '#b7bfd2'} />
     </g>
   );

@@ -2,145 +2,229 @@ import type { Mood } from '../../game/types';
 import type { Palette } from './PixelSprite';
 
 /**
- * ZUN 픽셀 스프라이트 (32 x 42)
+ * ZUN 픽셀 스프라이트 (48 x 64) — 치비 비율의 전신 캐릭터.
  *
- * 광원은 좌측 상단. 모든 재질은 그림자 / 기본 / 하이라이트 3톤 + 선택적 아웃라인으로 구성한다.
- *
- * O 아웃라인   L 캡 하이라이트  C 캡 기본   c 캡 밑동
- * B 챙 윗면    b 챙 밑면        W 흰색
- * H 머리 기본  h 머리 그림자    j 머리 하이라이트
- * S 피부       s 피부 그림자    k 볼터치
- * I 홍채       P 동공           M 입
- * N 후드 기본  n 후드 그림자    l 후드 하이라이트  z 후드 끈
- * D 바지       d 바지 그림자    G 신발
+ * scripts/zun-sprite/gen.py 로 생성한 결과를 옮겨 담은 것이다.
+ * 실루엣 바깥은 자동 아웃라인 처리되어 있고, 광원은 좌측 상단이다.
  */
 export const ZUN_PALETTE: Palette = {
-  O: '#0a0d1a',
-  L: '#2e4076',
-  C: '#22305c',
-  c: '#16203f',
-  B: '#1b2749',
-  b: '#0d1430',
-  W: '#ffffff',
-  H: '#1d2140',
-  h: '#12152b',
-  j: '#303760',
-  S: '#f7d3af',
-  s: '#e2b189',
-  k: '#f3aa9c',
-  I: '#3c5cab',
-  P: '#0d1024',
-  M: '#c46059',
-  N: '#27365f',
-  n: '#19244b',
-  l: '#33477e',
-  z: '#e7edf9',
-  D: '#2b3152',
-  d: '#1f2442',
-  G: '#eaeef7',
+  C: '#22305c', // 캡 기본
+  D: '#1e2130', // 바지
+  G: '#f1f4fa', // 신발
+  H: '#191d2f', // 머리 기본
+  I: '#232b4d', // 홍채
+  L: '#2f4478', // 캡 하이라이트
+  M: '#cd6d63', // 입
+  N: '#22315a', // 후드 기본
+  O: '#151a2b', // 아웃라인
+  S: '#fbdcbb', // 피부
+  V: '#1a2649', // 챙 윗면
+  W: '#ffffff', // 흰색
+  b: '#3b6cff', // 신발 포인트
+  c: '#182246', // 캡 그림자
+  d: '#141621', // 바지 그림자
+  g: '#c6cfdd', // 신발 그림자
+  h: '#0f1120', // 머리 그림자
+  i: '#39477e', // 홍채 반사광
+  k: '#f2a49b', // 볼터치
+  l: '#2e4276', // 후드 하이라이트
+  m: '#a24b43', // 입 안쪽
+  n: '#172343', // 후드 그림자
+  s: '#e7b992', // 피부 그림자
+  t: '#fff1de', // 피부 하이라이트
+  v: '#0f1732', // 챙 밑면
+  z: '#eef2fb', // 후드 끈
 };
 
-/** 머리 위쪽: 캡(ZUN 자수) + 챙 + 앞머리 (y0 ~ y16) */
+/** 모자 ~ 눈썹 (y0 ~ y16) */
 const HEAD_TOP = [
-  '...........OOOOOOOOOO...........',
-  '.........OLLLLLLLCCCCCO.........',
-  '.......OLLLLLLLLLLCCCCCCO.......',
-  '......OLLLLLLLLLLLCCCCCCCO......',
-  '.....OLLLLWWWLWLWCWWCWCCCCO.....',
-  '.....OLLLLLLWLWLWCWWCWCCCCO.....',
-  '.....OLLLLLWLLWLWCWCWWCCCCO.....',
-  '.....OLLLLWLLLWLWCWCWWCCCCO.....',
-  '.....OLLLLWWWLWWWCWCCWCCCCO.....',
-  '....OccccccccccccccccccccccO....',
-  '...OBBBBBBBBBBBBBBBBBBBBBBBBO...',
-  '....ObbbbbbbbbbbbbbbbbbbbbbO....',
-  '......OHHHHHHHHHHHHHHHHHHO......',
-  '......OHHjjHHHHHHHHHHjjHHO......',
-  '......OHHHHHHHssssHHHHHHHO......',
-  '......OHHHHHssssssssHHHHHO......',
-  '......OHHHSSSSSSSSSSSSHHHO......',
+  '................................................',
+  '................................................',
+  '................................................',
+  '..................OOOOOOOOOOOO..................',
+  '................OOLCCCCCCCCCCCOO................',
+  '..............OOLLLCCCCCCCCCCCCcOO..............',
+  '.............OLLLLLCCCCCCCCCCCCcccO.............',
+  '............OLLLLWWWCWCWCWWCWCCccccO............',
+  '...........OLLLLLLLWCWCWCWWCWCCcccccO...........',
+  '..........OLLLLLLLWCCWCWCWCWWCCccccccO..........',
+  '..........OLLLLLLWLCCWCWCWCWWCCccccccO..........',
+  '..........OLLLLLLWWWCWWWCWCCWCCccccccO..........',
+  '.........OLLLLVVVVVVVVVVVVVVVVVVVVccccO.........',
+  '.........OVVVVVVVVVVVVVVVVVVVVVVVVVVVVO.........',
+  '........OVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVO........',
+  '........OvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvO........',
+  '.........OvvvvvvvvvvvvvvvvvvvvvvvvvvvvO.........',
 ];
 
-/** 몸: 턱 → 목 → 후드티 → 바지 → 신발 (y23 ~ y41) */
+/** 턱 ~ 신발 (y34 ~ y63) */
 const BODY = [
-  '.......OhsSSSSSSSSSSSSshO.......',
-  '........OsSSSSSSSSSSSSsO........',
-  '............OssssssO............',
-  '........ONNNNnnnnnnNNNNO........',
-  '.....OlllllllNNNNNNNNNNNNNO.....',
-  '....OlllllllNNzNNzNNNNNNNNNO....',
-  '...OllllllllNNzNNzNNNNNNNNNNO...',
-  '...OllllllllNNzNNzNNNNNNNNNNO...',
-  '...OllllllllNNNNNNNNNNNNNNNNO...',
-  '...OllllnnnnnnnnnnnnnnnnNNNNO...',
-  '...OllllnnnnnnnnnnnnnnnnNNNNO...',
-  '...OllllnnnnnnnnnnnnnnnnNNNNO...',
-  '...OnnnnnnnnnnnnnnnnnnnnnnnnO...',
-  '.......ODDDDDDO..ODDDDDDO.......',
-  '.......OdddDDDO..OdddDDDO.......',
-  '.......OdddDDDO..OdddDDDO.......',
-  '......OGGGGGGGGOOGGGGGGGGO......',
-  '......OGGGGGGGGOOGGGGGGGGO......',
-  '......OOOOOOOOOOOOOOOOOOOO......',
+  '............OOOOnNNNNSSSSSSNNNNnOOOO............',
+  '...........ONllnnnNNNNNNNNNNNNnnnNNNO...........',
+  '...........OllllnnnnnNNNNNNnnnnnNNNNO...........',
+  '..........ONlllllnnnnnnnnnnnnnnNNNNNNO..........',
+  '..........ONlllllllllnnnnnnNNNNNNNNNNO..........',
+  '..........ONlllllllllzlllNzNNNnnnnnNNO..........',
+  '..........ONlllllllllzlllNzNNnnnnnnnNO..........',
+  '..........ONlllllllllzlllNzNnnnnnnnnnO..........',
+  '..........ONNllllllllzllNNzNnnnnnnnnnO..........',
+  '..........ONNllllnnnnnnnnnnnnnnnnnnnnO..........',
+  '..........ONNNNllnllllNNNNNnnnnnnnnnnO..........',
+  '..........OSSSSNNnlNNNNNNNNnnnnnnssssO..........',
+  '..........OSSSSSNnNNNNNNNNNnnnnnsssssO..........',
+  '..........OSSSSSNNNNNNNNNNNNnnnnsssssO..........',
+  '..........OSSSSOOONNNNNNNNNNnnOOOssssO..........',
+  '...........OSSO..OddDDDOODDDddO..OssO...........',
+  '............OO...OddDDDOODDDddO...OO............',
+  '.................OddDDDOODDDddO.................',
+  '.................OddDDDOODDDddO.................',
+  '.................OddDDDOODDDddO.................',
+  '.................OddDDDOODDDddO.................',
+  '.................OddDDDOODDDddO.................',
+  '................OOGGGGDOODDGGGGOO...............',
+  '...............OggggggggOggggggggO..............',
+  '...............OGGGGGGGGOGGGGGGGGO..............',
+  '...............ObbbbbbbbObbbbbbbbO..............',
+  '...............OggggggggOggggggggO..............',
+  '................OOOOOOOO.OOOOOOOO...............',
+  '................................................',
+  '................................................',
 ];
 
-/** 표정 6줄 (y17 ~ y22): 눈썹/속눈썹 · 눈 3줄 · 볼 · 입 */
+/** 표정 17줄 (y17 ~ y33): 눈 · 볼 · 입 */
 const FACES: Record<Mood, string[]> = {
   idle: [
-    '......OHHHOOOOSSSSOOOOHHHO......',
-    '......OHHHWWWWSSSSWWWWHHHO......',
-    '......OHHHWIPWSSSSWPIWHHHO......',
-    '......OHHsWIIWSSSSWIIWsHHO......',
-    '......OHsSkkSSSSSSSSkkSsHO......',
-    '......OHsSSSSSSMMSSSSSSsHO......',
+    '.........OHHHCvvvvvvvvvvvvvvvvvvvvChhhO.........',
+    '.........OHHHHCCCCCCCCCCCCCCCCCCCChhhhO.........',
+    '.........OHHHHHtCCCCCCCCCCCCCCCChthhhhO.........',
+    '.........OHHHHHSSSCCCCCCCCCCCCSSShhhhhO.........',
+    '........OHHHHHHSSSSSSSSSSSSSSSSSShhhhhhO........',
+    '.........OHHHHHSOOOOOSSSSSSOOOOOShhhhhO.........',
+    '.........OHHHHHSWWIIOSSSSSSWWIIOShhhhhO.........',
+    '.........OHHHHHOWWIIIOSSSSOWWIIIOhhhhhO.........',
+    '.........OHHHHHOIIIIIOSSSSOIIIIIOhhhhhO.........',
+    '.........OHHHHHOIIIiIOSSSSOIIIiIOhhhhhO.........',
+    '.........OHHHHHSIIIIISSSSSSIIIIIShhhhhO.........',
+    '.........OHkkkkSOIIIOSSSSSSOIIIOSkkkkhO.........',
+    '.........OHHkkkSSSSSSSSSSSSSSSSSSkkkhhO.........',
+    '.........OHHHHsSSSSSSSMMMMSSSSSSSsHHHHO.........',
+    '..........OHHHOSSSSSSSMSSMSSSSSSSOHHHO..........',
+    '...........OOO.OSSSSSSSSSSSSSSSSO.OOO...........',
+    '................OnSSSSSSSSSSSSnO................',
   ],
   focus: [
-    '......OHHHhhhhSSSShhhhHHHO......',
-    '......OHHHOOOOSSSSOOOOHHHO......',
-    '......OHHHWIPWSSSSWPIWHHHO......',
-    '......OHHsWIIWSSSSWIIWsHHO......',
-    '......OHsSSSSSSSSSSSSSSsHO......',
-    '......OHsSSSSSSMMSSSSSSsHO......',
+    '.........OHHHCvvvvvvvvvvvvvvvvvvvvChhhO.........',
+    '.........OHHHHCCCCCCCCCCCCCCCCCCCChhhhO.........',
+    '.........OHHHHHthhCCCCCCCCCCCChhhthhhhO.........',
+    '.........OHHHHHSSShhhCCCCCChhhSSShhhhhO.........',
+    '........OHHHHHHSSSSSSSSSSSSSSSSSShhhhhhO........',
+    '.........OHHHHHSOOOOOSSSSSSOOOOOShhhhhO.........',
+    '.........OHHHHHSWWIIOSSSSSSWWIIOShhhhhO.........',
+    '.........OHHHHHOWWIIIOSSSSOWWIIIOhhhhhO.........',
+    '.........OHHHHHOIIIIIOSSSSOIIIIIOhhhhhO.........',
+    '.........OHHHHHOIIIiIOSSSSOIIIiIOhhhhhO.........',
+    '.........OHHHHHSIIIIISSSSSSIIIIIShhhhhO.........',
+    '.........OHHHHHSOIIIOSSSSSSOIIIOShhhhhO.........',
+    '.........OHHHHHSSSSSSSSSSSSSSSSSShhhhhO.........',
+    '.........OHHHHsSSSSSSmmmmmmSSSSSSsHHHHO.........',
+    '..........OHHHOSSSSSSSSSSSSSSSSSSOHHHO..........',
+    '...........OOO.OSSSSSSSSSSSSSSSSO.OOO...........',
+    '................OnSSSSSSSSSSSSnO................',
   ],
   happy: [
-    '......OHHHSSSSSSSSSSSSHHHO......',
-    '......OHHHSOOSSSSSSOOSHHHO......',
-    '......OHHHOSSOSSSSOSSOHHHO......',
-    '......OHHskkSSSSSSSSkksHHO......',
-    '......OHsSSSSSSSSSSSSSSsHO......',
-    '......OHsSSSSOMMMMOSSSSsHO......',
+    '.........OHHHCvvvvvvvvvvvvvvvvvvvvChhhO.........',
+    '.........OHHHHCCCCCCCCCCCCCCCCCCCChhhhO.........',
+    '.........OHHHHHtCCChhCCCCCChhCCChthhhhO.........',
+    '.........OHHHHHShhhCCCCCCCCCChhhShhhhhO.........',
+    '........OHHHHHHSSSSSSSSSSSSSSSSSShhhhhhO........',
+    '.........OHHHHHSSSSSSSSSSSSSSSSSShhhhhO.........',
+    '.........OHHHHHSSSSSSSSSSSSSSSSSShhhhhO.........',
+    '.........OHHHHHSSSOSSSSSSSSSSOSSShhhhhO.........',
+    '.........OHHHHHSSOOOSSSSSSSSOOOSShhhhhO.........',
+    '.........OHHHHHOOOOOOOSSSSOOOOOOOhhhhhO.........',
+    '.........OHHHHHOSOSOSOSSSSOSOSOSOhhhhhO.........',
+    '.........OHkkkkOOSSSOOSSSSOOSSSOOkkkkhO.........',
+    '.........OHHkkkSSSSSSSSSSSSSSSSSSkkkhhO.........',
+    '.........OHHHHsSSSSSSSMSMSMSSSSSSsHHHHO.........',
+    '..........OHHHOSSSSSSSMMMMSSSSSSSOHHHO..........',
+    '...........OOO.OSSSSSSSmmSSSSSSSO.OOO...........',
+    '................OnSSSSSSSSSSSSnO................',
   ],
   panic: [
-    '......OHHHOOOOSSSSOOOOHHHO......',
-    '......OHHHWWWWSSSSWWWWHHHO......',
-    '......OHHHWPWWSSSSWWPWHHHO......',
-    '......OHHsWWWWSSSSWWWWsHHO......',
-    '......OHsSSSSSSSSSSSSSSsHO......',
-    '......OHsSSSSSMOMSSSSSSsHO......',
+    '.........OHHHCvvvvvvhvvvvvvhvvvvvvChhhO.........',
+    '.........OHHHHCCChhhCCCCCCCChhhCCChhhhbO........',
+    '.........OHHHHHthCCCCCCCCCCCCCChhthhhhObO.......',
+    '.........OHHHHHSSSCCCCCCCCCCCCSSShhhhhbO........',
+    '........OHHHHHHSSOOOSSSSSSSSOOOSShhhhhhO........',
+    '.........OHHHHHSOOOOOSSSSSSOOOOOShhhhhO.........',
+    '.........OHHHHHOWWIIOOSSSSOWWIIOOhhhhhO.........',
+    '.........OHHHHHOWWIIIOSSSSOWWIIIOhhhhhO.........',
+    '.........OHHHHHOIIIIIOSSSSOIIIIIOhhhhhO.........',
+    '.........OHHHHHOIIIiIOSSSSOIIIiIOhhhhhO.........',
+    '.........OHHHHHOIIIIIOSSSSOIIIIIOhhhhhO.........',
+    '.........OHHHHHSOIIIOSSSSSSOIIIOShhhhhO.........',
+    '.........OHHHHHSSOOOSSSSSSSSOOOSShhhhhO.........',
+    '.........OHHHHsSSSSSSMSMSMSSSSSSSsHHHHO.........',
+    '..........OHHHOSSSSSSSMSMSSSSSSSSOHHHO..........',
+    '...........OOO.OSSSSSSSSSSSSSSSSO.OOO...........',
+    '................OnSSSSSSSSSSSSnO................',
   ],
   shock: [
-    '......OHHHOOOOSSSSOOOOHHHO......',
-    '......OHHHWWWWSSSSWWWWHHHO......',
-    '......OHHHWPPWSSSSWPPWHHHO......',
-    '......OHHsWIIWSSSSWIIWsHHO......',
-    '......OHsSSSSSSSSSSSSSSsHO......',
-    '......OHsSSSSSOMMOSSSSSsHO......',
+    '.........OHHHCvvvvvhhvvvvvvhhvvvvvChhhO.........',
+    '.........OHHHHCChhhCCCCCCCCCChhhCChhhhO.........',
+    '.........OHHHHHtCCCCCCCCCCCCCCCChthhhhO.........',
+    '.........OHHHHHSSSCCCCCCCCCCCCSSShhhhhO.........',
+    '........OHHHHHHSSOOOSSSSSSSSOOOSShhhhhhO........',
+    '.........OHHHHHSOOOOOSSSSSSOOOOOShhhhhO.........',
+    '.........OHHHHHOWWIIOOSSSSOWWIIOOhhhhhO.........',
+    '.........OHHHHHOWWIIIOSSSSOWWIIIOhhhhhO.........',
+    '.........OHHHHHOIIIIIOSSSSOIIIIIOhhhhhO.........',
+    '.........OHHHHHOIIIiIOSSSSOIIIiIOhhhhhO.........',
+    '.........OHHHHHOIIIIIOSSSSOIIIIIOhhhhhO.........',
+    '.........OHHHHHSOIIIOSSSSSSOIIIOShhhhhO.........',
+    '.........OHHHHHSSOOOSSOOOOSSOOOSShhhhhO.........',
+    '.........OHHHHsSSSSSSOmmmmOSSSSSSsHHHHO.........',
+    '..........OHHHOSSSSSSmmMMmmSSSSSSOHHHO..........',
+    '...........OOO.OSSSSSOMMMMOSSSSSO.OOO...........',
+    '................OnSSSSOOOOSSSSnO................',
   ],
   confident: [
-    '......OHHHhhhhSSSShhhhHHHO......',
-    '......OHHHWWWWSSSSOOOOHHHO......',
-    '......OHHHWIPWSSSSSSSSHHHO......',
-    '......OHHsWIIWSSSSSSSSsHHO......',
-    '......OHsSkkSSSSSSSSkkSsHO......',
-    '......OHsSSSSSSSMMMOSSSsHO......',
+    '.........OHHHCvvvvvvvvvvvvvvvvvvvvChhhO.........',
+    '.........OHHHHCCCCCCCCCCCCCCCCCCCChhhhO.........',
+    '.........OHHHHHthhCCCCCCCCCCCChhhthhhhO.........',
+    '.........OHHHHHSSShhhCCCCCChhhSSShhhhhO.........',
+    '........OHHHHHHSSSSSSSSSSSSSSSSSShhhhhhO........',
+    '.........OHHHHHSOOOOOSSSSSSSSSSSShhhhhO.........',
+    '.........OHHHHHSWWIIOSSSSSSSSSSSShhhhhO.........',
+    '.........OHHHHHOWWIIIOSSSSOSSSSSOhhhhhO.........',
+    '.........OHHHHHOIIIIIOSSSSOOOSOOOhhhhhO.........',
+    '.........OHHHHHOIIIiIOSSSSSOOOOOShhhhhO.........',
+    '.........OHHHHHSIIIIISSSSSSSSOSSShhhhhO.........',
+    '.........OHkkkkSOIIIOSSSSSSSSSSSSkkkkhO.........',
+    '.........OHHkkkSSSSSSSSSSSSSSSSSSkkkhhO.........',
+    '.........OHHHHsSSSSSSSSSMMMMSSSSSsHHHHO.........',
+    '..........OHHHOSSSSSSSMMSSSSSSSSSOHHHO..........',
+    '...........OOO.OSSSSSSSSSSSSSSSSO.OOO...........',
+    '................OnSSSSSSSSSSSSnO................',
   ],
   meltdown: [
-    '......OHHHhhhhSSSShhhhHHHO......',
-    '......OHHHOSSOSSSSOSSOHHHO......',
-    '......OHHHSOOSSSSSSOOSHHHO......',
-    '......OHHsOSSOSSSSOSSOsHHO......',
-    '......OHsSSSSSSSSSSSSSSsHO......',
-    '......OHsSSSMOMOMSSSSSSsHO......',
+    '.........OHHHCvvhvvvvvvvvvvvvvvhvvChhhO.........',
+    '.........OHHHHCCChhhCCCCCCCChhhCCChhhhO.........',
+    '.........OHHHHHtCCCChCCCCCChCCCChthhhhO.........',
+    '.........OHHHHHSSSCCCCCCCCCCCCSSShhhhhO.........',
+    '........OHHHHHHSSSSSSSSSSSSSSSSSShhhhhhO........',
+    '.........OHHHHHSSSSSSSSSSSSSSSSSShhhhhO.........',
+    '.........OHHHHHOSSSSSOSSSSOSSSSSOhhhhhO.........',
+    '.........OHHHHHOOOSOOOSSSSOOOSOOOhhhhhO.........',
+    '.........OHHHHHSSOOOSSSSSSSSOOOSShhhhhO.........',
+    '.........OHHHHHSOOOOOSSSSSSOOOOOShhhhhO.........',
+    '.........OHHHHHOSOSOSOSSSSOSOSOSOhhhhhO.........',
+    '.........OHHHHHOOSSSOOSSSSOOSSSOOhhhhhO.........',
+    '.........OHHHHHSSSSSSSSSSSSSSSSSShhhhhO.........',
+    '.........OHHHHsSSSSSSMSMSMSSSSSSSsHHHHO.........',
+    '..........OHHHOSSSSSSSMSMSSSSSSSSOHHHO..........',
+    '...........OOO.OSSSSSSSSSSSSSSSSO.OOO...........',
+    '................OnSSSSSSSSSSSSnO................',
   ],
 };
 
@@ -155,52 +239,75 @@ export function zunRows(mood: Mood): string[] {
   return rows;
 }
 
-export const ZUN_WIDTH = 32;
-export const ZUN_HEIGHT = 42;
-/** 책상 위로 드러나는 상반신 높이 (행 수) — 아래 다리·신발은 책상에 가려 그리지 않는다 */
-export const ZUN_BUST_ROWS = 36;
+export const ZUN_WIDTH = 48;
+export const ZUN_HEIGHT = 64;
+/** 책상 위로 드러나는 상반신 높이 (행 수) — 아래는 책상에 가려 그리지 않는다 */
+export const ZUN_BUST_ROWS = 42;
 
 /**
- * 팀원 스프라이트 (16 x 22)
- * H 머리 · S 피부 · W 흰자 · P 동공 · M 입 · T 상의 · L 바지 · K 신발 · O 아웃라인
+ * 팀원 스프라이트 (28 x 40) — ZUN 과 같은 톤의 축소판.
+ * A(머리) · T(상의) · u(상의 그림자) 는 팀원마다 색을 바꿔 넣는다.
  */
 export const TEAMMATE_ROWS = [
-  '.....OOOOOO.....',
-  '...OOHHHHHHOO...',
-  '..OHHHHHHHHHHO..',
-  '..OHSSSSSSSSHO..',
-  '..OHSWWSSWWSHO..',
-  '..OHSWPSSWPSHO..',
-  '..OHSSSSSSSSHO..',
-  '...OSSSMMSSSO...',
-  '....OSSSSSSO....',
-  '.....OOSSOO.....',
-  '..OOOOTTTTOOOO..',
-  '.OTTTTTTTTTTTTO.',
-  '.OTTTTTTTTTTTTO.',
-  '.OTTTTTTTTTTTTO.',
-  '.OTTTTTTTTTTTTO.',
-  '..OTTTTTTTTTTO..',
-  '..OTTTTTTTTTTO..',
-  '..OLLLLOOLLLLO..',
-  '..OLLLLOOLLLLO..',
-  '..OLLLLOOLLLLO..',
-  '.OKKKKKOOKKKKKO.',
-  '.OOOOOOOOOOOOOO.',
+  '............................',
+  '............................',
+  '............................',
+  '............................',
+  '...........OOOOOO...........',
+  '.........OOAAAAAAOO.........',
+  '.......OOAAAAAAAAAAOO.......',
+  '......OAAAAAAAAAAAAAAO......',
+  '.....OAAAAAAAAAAAAAAAAO.....',
+  '.....OAAAAAAAAAAAAAAAAO.....',
+  '....OAAAAAAAAAAAAAAAAAAO....',
+  '....OAAAAAAAAAAAAAAAAAAO....',
+  '....OAAtASAAASASAAASAAAO....',
+  '...OAAAASSSASSSSSASSAAAAO...',
+  '...OAAAASOOOSSSSOOOSAAAAO...',
+  '...OAAAAOWWWOSSOWWWOAAAAO...',
+  '...OAAAAOWIWOSSOWIWOAAAAO...',
+  '...OAAAAOIIIOSSOIIIOAAAAO...',
+  '....OAASSOWOSSSSOWOSSAAO....',
+  '....OAkkkkSSSSSSSSkkkkAO....',
+  '.....OOOSSSSSMMSSSSSOOO.....',
+  '.......OOOSSSSSSSSOOO.......',
+  '......OuuuuussssTTTTTO......',
+  '......OuuuuuuuuTTTTTTO......',
+  '......OuuuuuuuuTTTTTTO......',
+  '.....OuuuuuuuuuTTTTTTTO.....',
+  '.....OuuuuuuuuuTTTTTTTO.....',
+  '.....OTuuuuuuuTTTTTTTTO.....',
+  '......OTuuuuuTTTTTTTTO......',
+  '......OSSSTTTTTTTTsssO......',
+  '......OSSSTTTTTTTTsssO......',
+  '......OSSSDTTTTTTDsssO......',
+  '.......OOODDDOODDDOOO.......',
+  '.........ODDDOODDDO.........',
+  '.........ODDDOODDDO.........',
+  '.........ODDDOODDDO.........',
+  '........OGGGGGGGGGGO........',
+  '........OGGGGGGGGGGO........',
+  '........OggggggggggO........',
+  '.........OOOOOOOOOO.........',
 ];
 
 export function teammatePalette(hair: string, shirt: string): Palette {
   return {
-    O: '#0a0d1a',
-    H: hair,
-    S: '#f2cba6',
-    W: '#ffffff',
-    P: '#141828',
-    M: '#c46059',
+    ...ZUN_PALETTE,
+    A: hair,
     T: shirt,
-    L: '#2b3152',
-    K: '#1a1f36',
+    u: shade(shirt, -28),
   };
+}
+
+/** hex 색을 밝게(+) / 어둡게(-) 보정 */
+function shade(hex: string, amount: number): string {
+  const n = parseInt(hex.replace('#', ''), 16);
+  const ch = (v: number) => Math.max(0, Math.min(255, v + amount));
+  const r = ch(n >> 16);
+  const g = ch((n >> 8) & 0xff);
+  const b = ch(n & 0xff);
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
 export const TEAMMATE_STYLES: [string, string][] = [

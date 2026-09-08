@@ -21,7 +21,7 @@ export function OfflineModal() {
           <div className="relative mx-auto my-3 flex h-32 items-end justify-center">
             <span className="absolute left-[30%] top-0 text-lg anim-drift">💤</span>
             <span className="absolute left-[36%] top-3 text-sm anim-drift" style={{ animationDelay: '0.7s' }}>z</span>
-            <ZunSprite mood="happy" scale={3} />
+            <ZunSprite mood="happy" scale={2} />
           </div>
           <div className="grid gap-2">
             <Reward icon="💰" label="수익" value={<AnimatedNumber value={report.money} format={formatMoney} speed={0.08} className="text-[#ffd06a]" />} />
