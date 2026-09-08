@@ -59,7 +59,6 @@ export function HomePanel({ onTab }: { onTab: (t: Tab) => void }) {
             <div className="truncate text-sm font-black">{quick.name} {(state.projectLevels[quick.id] ?? 0) > 0 ? `v${(state.projectLevels[quick.id] ?? 0) + 1}` : ''}</div>
           </div>
           <Button
-            size="sm"
             variant="go"
             onClick={() => actions.openStrategy(quick.id)}
             sub={projectCost(quick, state.projectLevels[quick.id] ?? 0, costMult) === 0 ? '무료' : formatMoney(projectCost(quick, state.projectLevels[quick.id] ?? 0, costMult))}

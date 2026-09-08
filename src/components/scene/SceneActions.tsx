@@ -33,8 +33,8 @@ export function SceneActions() {
           disabled={!ready}
           aria-label={ready ? '커피 부스트 사용' : '커피 부스트 재사용 대기 중'}
           title={ready ? '커피 부스트: 60초 동안 수익 2배' : `${formatDurationShort(remain)} 후 사용 가능`}
-          className={`btn-press relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl text-base shadow-lg md:h-11 md:w-11 md:text-lg ${
-            ready ? 'bg-gradient-to-b from-[#ffcd4d] to-[#f08a1f] text-navy-deep' : 'panel-glass text-ink-muted'
+          className={`btn relative h-11 w-11 overflow-hidden rounded-xl text-lg md:h-12 md:w-12 ${
+            ready ? 'btn-gold' : 'panel-glass text-ink-muted'
           }`}
         >
           <span className={ready ? 'anim-bob' : ''}>☕</span>
@@ -54,8 +54,8 @@ export function SceneActions() {
         onClick={() => actions.openDaily()}
         aria-label="일일 출석 보상"
         title="일일 출석 보상"
-        className={`btn-press relative flex h-9 w-9 items-center justify-center rounded-xl text-base shadow-lg md:h-11 md:w-11 md:text-lg ${
-          daily ? 'bg-gradient-to-b from-[#34d36e] to-[#1aa64b] text-white' : 'panel-glass text-ink-muted'
+        className={`btn relative h-11 w-11 rounded-xl text-lg md:h-12 md:w-12 ${
+          daily ? 'btn-go' : 'panel-glass text-ink-muted'
         }`}
       >
         <span className={daily ? 'anim-bob' : ''}>🎁</span>

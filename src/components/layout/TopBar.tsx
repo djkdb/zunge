@@ -22,15 +22,15 @@ export function TopBar() {
     <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2 md:px-5">
         {/* 로고 */}
-        <div className="hidden shrink-0 flex-col leading-none md:flex">
+        <h1 className="hidden shrink-0 flex-col leading-none md:flex">
           <span className="text-pixel text-[22px] font-bold tracking-wider text-white">
             <span className="text-[#5b9dff]">Z</span>UN
           </span>
           <span className="text-[9px] font-bold tracking-[0.18em] text-ink-muted">DREAM · CODE · BUILD · GROW</span>
-        </div>
-        <div className="shrink-0 md:hidden">
+        </h1>
+        <h1 className="shrink-0 md:hidden">
           <span className="text-pixel text-lg font-bold tracking-wider text-white"><span className="text-[#5b9dff]">Z</span>UN</span>
-        </div>
+        </h1>
 
         {/* 자원 */}
         <div className="flex min-w-0 flex-1 items-stretch gap-1.5 md:gap-2">

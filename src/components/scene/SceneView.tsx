@@ -184,7 +184,7 @@ export function SceneView({ compact = false, desktop = false, onGoProjects }: { 
           })
         )}
         {!compact && activeDevs.length > 0 && activeDevs.length < slots && (
-          <button type="button" onClick={onGoProjects} className="btn-press panel-glass flex items-center gap-1 self-end rounded-lg px-2 py-1 text-[11px] font-bold text-ink-soft">
+          <button type="button" onClick={onGoProjects} className="btn-press panel-glass flex min-h-[36px] items-center gap-1 self-end rounded-lg px-3 py-2 text-[11px] font-bold text-ink-soft">
             <Icon name="plus" size={11} strokeWidth={2.4} />
             슬롯 {activeDevs.length}/{slots} · 프로젝트 추가
           </button>
