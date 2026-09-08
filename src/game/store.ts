@@ -18,6 +18,7 @@ import { formatMoney, formatUsers } from './format';
 import { computeDerived } from './calc';
 import type { Derived } from './types';
 import { setSoundEnabled, sfx } from './audio';
+import { initCharacterAssets } from './characterAssets';
 
 // ───────────── 게임 상태 스토어 ─────────────
 export const gameStore = createStore<GameState>(createInitialState());
@@ -501,6 +502,7 @@ function applyOffline(now: number): void {
 export function bootGame(): void {
   if (booted) return;
   booted = true;
+  void initCharacterAssets();
   const now = Date.now();
   const loaded = loadGame();
   if (loaded) {

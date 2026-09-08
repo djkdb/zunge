@@ -53,7 +53,8 @@ export const POSE_NUMBER: Record<ZunPose, number> = {
   laptop: 32,
 };
 
-export function poseSrc(pose: ZunPose): string {
+/** 저장소에 포함된 PNG 경로 */
+export function bundledPoseSrc(pose: ZunPose): string {
   return `${import.meta.env.BASE_URL}characters/zun/${String(POSE_NUMBER[pose]).padStart(2, '0')}.png`;
 }
 

@@ -1,9 +1,11 @@
-import { memo, useEffect, useId, useState } from 'react';
+import { memo, useId } from 'react';
 import type { Mood } from '../../game/types';
 import {
-  FULL_POSE, MOTION_CLASS, POSE_MOTION, POSE_NUMBER, ROOM_POSE, type ZunPose, poseSrc, roomPose,
+  FULL_POSE, MOTION_CLASS, POSE_MOTION, POSE_NUMBER, ROOM_POSE, type ZunPose, bundledPoseSrc, roomPose,
 } from '../../game/data/zunPoses';
 import poseMeta from '../../game/data/zunPoseMeta.json';
+import { characterStore } from '../../game/characterAssets';
+import { useStore } from '../../game/createStore';
 import { PixelSprite } from './PixelSprite';
 import { ZUN_BUST_ROWS, ZUN_PALETTE, zunRows } from './zunFallbackSprite';
 
@@ -14,54 +16,32 @@ import { ZUN_BUST_ROWS, ZUN_PALETTE, zunRows } from './zunFallbackSprite';
  * 이미지가 아직 없으면 폴백 픽셀 스프라이트로 자동 전환해 화면이 비지 않게 한다.
  */
 
-// ── 자산 존재 여부는 앱 전체에서 한 번만 확인한다 ──
-type AssetStatus = 'loading' | 'ready' | 'missing';
-let assetStatus: AssetStatus = 'loading';
-const listeners = new Set<(s: AssetStatus) => void>();
-let probeStarted = false;
+interface PoseSize { w: number; h: number }
+const BUNDLED = poseMeta as { refHeight?: number; poses?: Record<string, PoseSize> };
 
-function probe() {
-  if (probeStarted || typeof window === 'undefined') return;
-  probeStarted = true;
-  const img = new Image();
-  img.onload = () => {
-    assetStatus = img.naturalWidth > 0 ? 'ready' : 'missing';
-    listeners.forEach((l) => l(assetStatus));
-  };
-  img.onerror = () => {
-    assetStatus = 'missing';
-    listeners.forEach((l) => l(assetStatus));
-    console.warn(
-      '[ZUN] 캐릭터 이미지를 찾지 못해 폴백 스프라이트를 사용합니다.\n' +
-      '      npm run extract-zun -- <레퍼런스 시트 경로> 로 public/characters/zun/ 을 만들어주세요.',
-    );
-  };
-  img.src = poseSrc('idle');
+interface Resolved {
+  /** 그릴 이미지 URL. null 이면 폴백 스프라이트를 쓴다 */
+  src: string | null;
+  size: PoseSize;
+  refHeight: number;
 }
 
-export function useZunAssets(): AssetStatus {
-  const [status, setStatus] = useState<AssetStatus>(assetStatus);
-  useEffect(() => {
-    probe();
-    setStatus(assetStatus);
-    listeners.add(setStatus);
-    return () => {
-      listeners.delete(setStatus);
-    };
-  }, []);
-  return status;
+/** 사용자가 넣은 이미지 → 저장소 포함 이미지 → 폴백 순서로 고른다 */
+function useResolvedPose(pose: ZunPose): Resolved {
+  const assets = useStore(characterStore, (s) => s);
+  const num = POSE_NUMBER[pose];
+  const key = String(num).padStart(2, '0');
+  if (assets.source === 'imported' && assets.urls[num]) {
+    return { src: assets.urls[num], size: assets.sizes[num] ?? { w: 1, h: 1 }, refHeight: assets.refHeight || 1 };
+  }
+  if (assets.source === 'bundled') {
+    const size = BUNDLED.poses?.[key] ?? { w: 1, h: 1 };
+    return { src: bundledPoseSrc(pose), size, refHeight: BUNDLED.refHeight || size.h };
+  }
+  return { src: null, size: { w: 1, h: 1 }, refHeight: 1 };
 }
 
 // ───────────── SVG(방 안)용 ─────────────
-
-interface PoseSize { w: number; h: number }
-const META = poseMeta as { refHeight?: number; poses?: Record<string, PoseSize> };
-
-/** 포즈 그림의 실제 픽셀 크기. 메타데이터가 없으면 정사각으로 가정한다 */
-function poseSize(pose: ZunPose): PoseSize {
-  const key = String(POSE_NUMBER[pose]).padStart(2, '0');
-  return META.poses?.[key] ?? { w: 1, h: 1 };
-}
 
 interface SceneProps {
   pose: ZunPose;
@@ -81,8 +61,10 @@ interface SceneProps {
  */
 export const ZunInScene = memo(function ZunInScene({ pose, cx, bottom, height, clipBottom }: SceneProps) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
-  const { w: pw, h: ph } = poseSize(pose);
-  const ref = META.refHeight || ph;
+  const { src, size, refHeight } = useResolvedPose(pose);
+  if (!src) return null;
+  const { w: pw, h: ph } = size;
+  const ref = refHeight || ph;
   // 포즈마다 그림 높이가 다르므로 기준 높이 대비 비율로 키를 정하고, 가로는 원본 종횡비를 지킨다
   const drawH = height * (ph / ref);
   const drawW = drawH * (pw / ph);
@@ -98,7 +80,7 @@ export const ZunInScene = memo(function ZunInScene({ pose, cx, bottom, height, c
         </clipPath>
       </defs>
       <image
-        href={poseSrc(pose)}
+        href={src}
         x={left}
         y={top}
         width={drawW}
@@ -114,8 +96,8 @@ export const ZunInScene = memo(function ZunInScene({ pose, cx, bottom, height, c
 /** 방 안에서 게임 상태에 맞는 포즈를 골라 그린다 */
 export function ZunRoomFigure(props: Omit<SceneProps, 'pose'> & { mood: Mood; typing: boolean; bugged: boolean }) {
   const { mood, typing, bugged, ...rest } = props;
-  const status = useZunAssets();
-  if (status !== 'ready') {
+  const source = useStore(characterStore, (s) => s.source);
+  if (source === 'none' || source === 'loading') {
     return (
       <g className={MOTION_CLASS[POSE_MOTION[ROOM_POSE[mood]]]}>
         <PixelSprite
@@ -145,9 +127,9 @@ interface PortraitProps {
 }
 
 export function ZunPortrait({ pose, mood = 'idle', height, className = '' }: PortraitProps) {
-  const status = useZunAssets();
   const p = pose ?? FULL_POSE[mood];
-  if (status !== 'ready') {
+  const { src } = useResolvedPose(p);
+  if (!src) {
     return (
       <div className={`inline-block ${MOTION_CLASS[POSE_MOTION[p]]} ${className}`} style={{ transformOrigin: '50% 100%' }}>
         <PixelSprite rows={zunRows(mood)} palette={ZUN_PALETTE} scale={Math.max(1, Math.round(height / 64))} />
@@ -156,7 +138,7 @@ export function ZunPortrait({ pose, mood = 'idle', height, className = '' }: Por
   }
   return (
     <img
-      src={poseSrc(p)}
+      src={src}
       alt=""
       aria-hidden="true"
       className={`${MOTION_CLASS[POSE_MOTION[p]]} ${className}`}

@@ -3,6 +3,7 @@ import { useGame, useUi } from '../../hooks/useGame';
 import { actions, pushToast } from '../../game/store';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
+import { CharacterImport } from './CharacterImport';
 
 export function SettingsPanel() {
   const settings = useGame((s) => s.settings);
@@ -38,6 +39,8 @@ export function SettingsPanel() {
         <Toggle label="효과음" desc="구매, 출시, 레벨업 효과음" value={settings.sound} onChange={(v) => actions.updateSettings({ sound: v })} />
         <Toggle label="애니메이션 줄이기" desc="저사양 기기에서 부드럽게 플레이" value={settings.reducedMotion} onChange={(v) => actions.updateSettings({ reducedMotion: v })} />
       </div>
+
+      <CharacterImport />
 
       <div className="card flex flex-col gap-2 p-3">
         <div className="text-xs font-black">📘 튜토리얼</div>
