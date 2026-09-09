@@ -58,9 +58,17 @@ export const EVENT_MAX_INTERVAL_SEC = 110;
 
 export const MAX_LEVEL = 100;
 
+/*
+ * 레벨업에 필요한 경험치.
+ *
+ * 지수가 2.1 이었을 때는 중반부터 레벨이 돈을 따라가지 못했다.
+ * 팀원은 15분에 살 돈이 모이는데 레벨은 34분에야 열렸고, AI Agent 도 12분을
+ * 기다려야 했다. 돈을 쥐고 살 게 없는 시간은 그냥 멈춰 있는 시간이다.
+ * 1.95 로 낮추면 그 대기가 대부분 사라지면서도 진행 자체는 짧아지지 않는다.
+ */
 export function xpToNext(level: number): number {
   if (level >= MAX_LEVEL) return Infinity;
-  return Math.floor(100 * Math.pow(level, 2.1) + 50 * level);
+  return Math.floor(100 * Math.pow(level, 1.95) + 50 * level);
 }
 
 // ───────── 리부트(프레스티지) ─────────

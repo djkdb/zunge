@@ -117,9 +117,16 @@ export function SceneView({ compact = false, desktop = false, onGoProjects }: { 
         )}
       </div>
 
-      {/* ZUN 말풍선 */}
+      {/*
+        ZUN 말풍선 — 머리 오른쪽에 세운다.
+        머리 위는 비어 보이지만 실제로는 막혀 있다. 왼쪽 위는 STAGE·AI 배지가,
+        오른쪽 위는 커피·선물 버튼이 차지해서 그 사이에 끼우면 글자가 잘린다.
+        ZUN 은 가로 중앙(50%)에 서 있고 머리가 45~56% 구간이므로 오른쪽으로 비켜
+        얼굴을 가리지 않게 두되, 버튼 아래(세로 22% 아래)에서 시작한다.
+        세로 위치는 zoom 별 viewBox 가 달라 breakpoint 로 나눈다.
+      */}
       {!compact && (
-        <div key={`${mood}-${lineIdx}`} className="anim-pop pointer-events-none absolute left-[50%] top-[26%] max-w-[42%] rounded-xl rounded-bl-none bg-white px-2.5 py-1.5 text-[11px] font-bold text-navy-deep shadow-lg md:text-xs">
+        <div key={`${mood}-${lineIdx}`} className="anim-pop pointer-events-none absolute left-[57%] top-[25%] max-w-[40%] rounded-xl rounded-bl-none bg-white px-2.5 py-1.5 text-[11px] font-bold text-navy-deep shadow-lg md:top-[31%] md:text-xs">
           {zunLine}
         </div>
       )}

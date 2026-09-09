@@ -48,7 +48,7 @@ export const UPGRADES: UpgradeDef[] = [
   },
   {
     id: 'team', name: '팀원', icon: '🧑‍💻', description: '함께 개발할 팀원을 채용한다. 개발 속도와 수익이 함께 오른다.',
-    baseCost: 800000, costMult: 2.8, maxLevel: 12, requiredLevel: 14,
+    baseCost: 800000, costMult: 2.8, maxLevel: 12, requiredLevel: 11,
     effectLabel: (l) => `팀원 ${l}명 · 개발 속도 +${pct(l * UPGRADE_EFFECT.teamSpeedPerLevel)}, 수익 +${pct(l * UPGRADE_EFFECT.teamIncomePerLevel)}`,
   },
 ];
