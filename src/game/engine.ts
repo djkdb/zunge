@@ -3,7 +3,7 @@ import {
   ACHIEVEMENT_INCOME_PER, AUTODEV_UNLOCK_LEVEL, BOOST_COOLDOWN_SEC, BOOST_DURATION_SEC, BOOST_MULT, BOOST_UNLOCK_LEVEL,
   BUGGED_LAUNCH_PENALTY, BUG_FIX_COST_RATE, BUG_PROGRESS_PENALTY, DAILY_BASE_SECONDS, DAILY_MAX_STREAK, DAILY_MIN_MONEY, DAILY_STREAK_SECONDS,
   EVENT_MAX_INTERVAL_SEC, EVENT_MIN_INTERVAL_SEC, GOLDEN_MIN_MONEY, GOLDEN_REWARD_SECONDS,
-  MAX_LEVEL, PRESTIGE_MIN_EARNED, PRESTIGE_MIN_LEVEL, SAVE_VERSION, START_MONEY, dateKey, isNextDay, xpToNext,
+  MAX_LEVEL, PRESTIGE_MIN_EARNED, PRESTIGE_MIN_LEVEL, SAVE_VERSION, START_MONEY, USER_OVERLOAD_MAX, dateKey, isNextDay, xpToNext,
 } from './constants';
 import { ACHIEVEMENTS } from './data/achievements';
 import { PROJECTS, PROJECT_MAP } from './data/projects';
@@ -140,10 +140,26 @@ function grantXp(state: GameState, amount: number, signals: Signal[]): GameState
   return { ...state, xp, level };
 }
 
+/**
+ * 사용자를 더한다.
+ *
+ * 서버 상한에서 딱 자르지 않는다. 이벤트나 출시로 얻은 사용자는 상한을
+ * 넘길 수 있고, 대신 과부하 구간에서는 자연 유입이 말라붙는다(tick 참조).
+ * 천장은 상한의 USER_OVERLOAD_MAX 배다.
+ */
 function addUsers(state: GameState, amount: number): GameState {
-  const max = computeDerived(state).maxUsers;
-  const users = Math.min(max, state.users + amount);
+  const ceiling = computeDerived(state).maxUsers * USER_OVERLOAD_MAX;
+  // 이미 천장 위라면 (상한이 줄어드는 일은 없지만) 더 밀어 올리지는 않는다
+  const users = Math.min(Math.max(state.users, ceiling), state.users + amount);
   return { ...state, users: Math.max(0, users) };
+}
+
+/** 상한을 넘어선 정도에 따른 유입 감쇠 계수 (상한에서 1, 천장에서 0) */
+export function growthDamping(users: number, maxUsers: number): number {
+  if (maxUsers <= 0) return 0;
+  const overload = users / maxUsers;
+  if (overload <= 1) return 1;
+  return Math.max(0, (USER_OVERLOAD_MAX - overload) / (USER_OVERLOAD_MAX - 1));
 }
 
 function pickEvent(state: GameState, allowChoice = true): GameEventDef | null {
@@ -273,8 +289,9 @@ export function tick(state: GameState, dt: number, now: number, opts: TickOption
   }
 
   // 사용자 증가
-  if (d.userGrowthPerSec > 0 && next.users < d.maxUsers) {
-    next = addUsers(next, d.userGrowthPerSec * dt * incomeMult);
+  const damping = growthDamping(next.users, d.maxUsers);
+  if (d.userGrowthPerSec > 0 && damping > 0) {
+    next = addUsers(next, d.userGrowthPerSec * dt * incomeMult * damping);
   }
 
   // 개발 진행

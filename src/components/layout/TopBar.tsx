@@ -16,7 +16,12 @@ export function TopBar() {
   const maxUsers = useDerived((d) => d.maxUsers);
   const xpToNext = useDerived((d) => d.xpToNext);
   const devSpeed = useDerived((d) => d.devSpeed);
-  const atCap = users >= maxUsers * 0.999 && maxUsers > 0;
+  /*
+   * 상한은 벽이 아니라 언덕이다. 넘어서면 유입이 줄어들 뿐 멈추지는 않으므로
+   * "한계" 가 아니라 지금 얼마나 버거운지를 보여준다.
+   */
+  const overload = maxUsers > 0 ? users / maxUsers : 0;
+  const strained = overload >= 0.95;
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur-md">
@@ -40,7 +45,11 @@ export function TopBar() {
             tone="text-[#8ab8ff]"
             label="사용자"
             main={<AnimatedNumber value={users} format={formatUsers} className="text-[#8ab8ff]" />}
-            sub={atCap ? <span className="text-[#ff8aa1]">서버 한계!</span> : <span>최대 {formatUsers(maxUsers)}</span>}
+            sub={
+              strained
+                ? <span className="text-[#ff8aa1]">서버 과부하 {Math.round(overload * 100)}%</span>
+                : <span>최대 {formatUsers(maxUsers)}</span>
+            }
           />
           <Stat
             icon="bolt"

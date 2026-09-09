@@ -29,11 +29,15 @@ export const UPGRADES: UpgradeDef[] = [
   },
   {
     id: 'internet', name: '인터넷', icon: '📶', description: '빠른 회선은 사용자 유입 속도를 높인다.',
-    baseCost: 1500, costMult: 1.85, maxLevel: 30, requiredLevel: 2,
+    /*
+     * 값이 싸다. 유입을 아무리 올려도 결국 서버 상한에 묶이므로 이 업그레이드가
+     * 실제로 벌어다 주는 돈은 크지 않다. 비싸게 받으면 그냥 함정이 된다.
+     */
+    baseCost: 1500, costMult: 1.42, maxLevel: 30, requiredLevel: 2,
     effectLabel: (l) => `사용자 유입 +${pct(l * UPGRADE_EFFECT.internetGrowthPerLevel)}`,
   },
   {
-    id: 'server', name: '서버', icon: '🗄️', description: '서버가 버틸 수 있는 최대 사용자 수를 늘린다.',
+    id: 'server', name: '서버', icon: '🗄️', description: '서버가 무리 없이 감당하는 사용자 수를 늘린다. 이 수를 넘어서면 유입이 점점 느려진다.',
     baseCost: 3000, costMult: 2.6, maxLevel: 22, requiredLevel: 3,
     effectLabel: (l) => `최대 사용자 ${formatCap(UPGRADE_EFFECT.serverBaseUsers * Math.pow(UPGRADE_EFFECT.serverMult, l))}`,
   },
