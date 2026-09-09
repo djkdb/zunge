@@ -5,6 +5,8 @@ import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 import { Modal } from '../ui/Modal';
 import { CharacterImport } from './CharacterImport';
+import { InstallGuide } from '../overlays/InstallGuide';
+import { useInstall } from '../../hooks/useInstall';
 
 export function SettingsPanel() {
   const settings = useGame((s) => s.settings);
@@ -13,6 +15,8 @@ export function SettingsPanel() {
   const [importCode, setImportCode] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [installOpen, setInstallOpen] = useState(false);
+  const { platform } = useInstall();
 
   const doExport = () => {
     const code = actions.exportSave();
@@ -40,6 +44,31 @@ export function SettingsPanel() {
         <Toggle label="효과음" desc="구매, 출시, 레벨업 효과음" value={settings.sound} onChange={(v) => actions.updateSettings({ sound: v })} />
         <Toggle label="애니메이션 줄이기" desc="저사양 기기에서 부드럽게 플레이" value={settings.reducedMotion} onChange={(v) => actions.updateSettings({ reducedMotion: v })} />
       </div>
+
+      {/* 앱으로 쓰기 — 방법이 기기마다 달라서 안내는 창에서 보여준다 */}
+      <div className="card flex flex-col gap-2 p-3">
+        <div className="flex items-center gap-1.5 text-xs font-black">
+          <Icon name="phone" size={14} className="text-ink-soft" />
+          앱으로 쓰기
+        </div>
+        <p className="text-[11px] leading-relaxed text-ink-soft">
+          {platform.method === 'installed'
+            ? '홈 화면에서 실행 중입니다. 네트워크가 없어도 켜져요.'
+            : '홈 화면에 추가하면 주소창 없이 전체 화면으로 열리고, 네트워크가 없어도 실행됩니다.'}
+        </p>
+        <Button
+          variant={platform.method === 'installed' ? 'neutral' : 'accent'}
+          onClick={() => setInstallOpen(true)}
+          disabled={platform.method === 'installed'}
+        >
+          <span className="flex items-center gap-1.5">
+            <Icon name="download" size={14} strokeWidth={2} />
+            {platform.method === 'installed' ? '이미 설치됨' : '홈 화면에 추가하는 방법'}
+          </span>
+        </Button>
+      </div>
+
+      <InstallGuide open={installOpen} onClose={() => setInstallOpen(false)} />
 
       <CharacterImport />
 

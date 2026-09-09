@@ -9,7 +9,8 @@ export type IconName =
   | 'target' | 'trophy' | 'chart' | 'clock' | 'sparkle' | 'bug' | 'plus'
   | 'monitor' | 'display' | 'wifi' | 'server' | 'loop' | 'team' | 'building'
   | 'download' | 'upload' | 'trash' | 'sound-on' | 'sound-off' | 'chevron-right'
-  | 'rocket' | 'shield' | 'gem' | 'arrow-right';
+  | 'rocket' | 'shield' | 'gem' | 'arrow-right'
+  | 'share-ios' | 'phone' | 'menu' | 'external' | 'plus-square';
 
 const P: Record<IconName, string> = {
   home: 'M3 10.6 12 3.5l9 7.1M5.4 9.4V20h13.2V9.4',
@@ -50,6 +51,12 @@ const P: Record<IconName, string> = {
   shield: 'M12 3.2 5 6v5.5c0 4 2.9 7.6 7 9.3 4.1-1.7 7-5.3 7-9.3V6l-7-2.8ZM9 12l2.2 2.4L15.3 10',
   gem: 'M7.5 3.5h9l4 5.5L12 20.5 3.5 9l4-5.5ZM3.5 9h17M9 3.6 7.2 9l4.8 11.5M15 3.6 16.8 9 12 20.5',
   'arrow-right': 'M4.5 12h14M13.5 6.5 19 12l-5.5 5.5',
+  // iOS 공유 버튼 — 위로 화살표가 나오는 네모
+  'share-ios': 'M12 15V3.5M12 3.5 8.4 7.1M12 3.5l3.6 3.6M7.5 10H6a1.5 1.5 0 0 0-1.5 1.5v8A1.5 1.5 0 0 0 6 21h12a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 18 10h-1.5',
+  phone: 'M7.5 2.5h9A1.5 1.5 0 0 1 18 4v16a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 20V4a1.5 1.5 0 0 1 1.5-1.5ZM10 18.6h4',
+  menu: 'M4.5 7h15M4.5 12h15M4.5 17h15',
+  external: 'M14 4.5h5.5V10M19 5 11.5 12.5M17.5 13.5v5A1.5 1.5 0 0 1 16 20H5.5A1.5 1.5 0 0 1 4 18.5V8A1.5 1.5 0 0 1 5.5 6.5h5',
+  'plus-square': 'M4.5 5.5h15v15h-15zM12 9.5v7M8.5 13h7',
 };
 
 interface Props {
