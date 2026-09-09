@@ -3,6 +3,29 @@ import { useGame, useUi } from '../../hooks/useGame';
 import { dismissInstallHint, installHintDismissed, onInstallChange, useInstall } from '../../hooks/useInstall';
 import { InstallGuide } from './InstallGuide';
 import { Icon } from '../ui/Icon';
+import type { PlatformInfo } from '../../game/platform';
+
+/**
+ * 한 줄 안내 문구.
+ *
+ * 대부분 인스타 DM 으로 들어오는데, 그때는 앱 안 브라우저라 홈 화면 추가가
+ * 아예 막혀 있다. 그 상황에서 "홈 화면에 추가하면" 이라고 안내하면
+ * 없는 메뉴를 찾게 만든다. 지금 이 사람이 실제로 할 수 있는 말을 건넨다.
+ */
+function nudgeLine(p: PlatformInfo): string {
+  switch (p.method) {
+    case 'in-app':
+      return `${p.appName} 밖에서 열면 앱으로 쓸 수 있어요`;
+    case 'ios-other':
+      return '사파리로 열면 앱으로 쓸 수 있어요';
+    case 'ios-safari':
+      return '공유 → 홈 화면에 추가하면 앱이 돼요';
+    case 'mac-safari':
+      return 'Dock에 추가하면 앱처럼 쓸 수 있어요';
+    default:
+      return '홈 화면에 추가하면 앱처럼 쓸 수 있어요';
+  }
+}
 
 /**
  * "앱으로 쓸 수 있어요" 한 줄 안내.
@@ -50,7 +73,7 @@ export function InstallNudge() {
               onClick={() => setGuide(true)}
               className="min-w-0 flex-1 truncate py-1 text-left text-[11px] font-bold text-ink-soft"
             >
-              홈 화면에 추가하면 앱처럼 쓸 수 있어요
+              {nudgeLine(platform)}
             </button>
             <Icon name="chevron-right" size={12} className="shrink-0 text-ink-muted" />
             <button
