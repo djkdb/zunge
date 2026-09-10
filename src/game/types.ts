@@ -175,6 +175,8 @@ export type Mood = 'idle' | 'focus' | 'happy' | 'panic' | 'shock' | 'confident' 
 
 export interface Settings {
   sound: boolean;
+  /** 배경음악. 효과음과 따로 끄고 켤 수 있어야 한다 — 성격이 다른 소리다 */
+  music: boolean;
   reducedMotion: boolean;
   /** 업그레이드 구매 단위 (1 / 10 / -1=최대) */
   buyMode: BuyMode;

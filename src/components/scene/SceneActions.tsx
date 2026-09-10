@@ -4,8 +4,9 @@ import { actions } from '../../game/store';
 import { boostReady, dailyAvailable } from '../../game/engine';
 import { BOOST_COOLDOWN_SEC, BOOST_UNLOCK_LEVEL } from '../../game/constants';
 import { formatDurationShort } from '../../game/format';
+import { Icon } from '../ui/Icon';
 
-/** 씬 위에 겹치는 즉시 실행 버튼 (부스트 / 출석 보상) */
+/** 씬 위에 겹치는 즉시 실행 버튼 (음소거 / 부스트 / 출석 보상) */
 export function SceneActions() {
   const level = useGame((s) => s.level);
   const boostAt = useGame((s) => s.boostReadyAt);
@@ -22,9 +23,25 @@ export function SceneActions() {
   const remain = Math.max(0, (boostAt - now) / 1000);
   const cooldownRatio = ready ? 0 : remain / BOOST_COOLDOWN_SEC;
   const daily = dailyAvailable(state, now);
+  const music = useGame((s) => s.settings.music);
 
   return (
     <div className="absolute right-2 top-2 z-10 flex gap-1.5">
+      {/*
+        음소거는 설정 안에만 두면 안 된다. 인스타에서 링크를 눌러 들어온 사람이
+        조용한 곳에 있을 수도 있는데, 그때 소리를 끄려고 탭을 옮겨 다니게 하면
+        그냥 창을 닫는다. 한 번에 끌 수 있는 자리에 둔다.
+      */}
+      <button
+        type="button"
+        onClick={() => actions.updateSettings({ music: !music })}
+        aria-label={music ? '배경음악 끄기' : '배경음악 켜기'}
+        title={music ? '배경음악 끄기' : '배경음악 켜기'}
+        aria-pressed={music}
+        className={`btn h-11 w-11 rounded-xl md:h-12 md:w-12 ${music ? 'panel-glass text-ink' : 'panel-glass text-ink-muted'}`}
+      >
+        <Icon name={music ? 'sound-on' : 'sound-off'} size={18} strokeWidth={2} />
+      </button>
       {boostUnlocked && (
         <button
           type="button"

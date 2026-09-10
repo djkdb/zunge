@@ -19,7 +19,7 @@ import { stageDef } from './data/stages';
 import { formatMoney, formatUsers } from './format';
 import { computeDerived } from './calc';
 import type { Derived } from './types';
-import { setSoundEnabled, sfx } from './audio';
+import { setMusicEnabled, setSoundEnabled, sfx } from './audio';
 import { initCharacterAssets } from './characterAssets';
 
 // ───────────── 게임 상태 스토어 ─────────────
@@ -473,6 +473,7 @@ export const actions = {
   updateSettings(patch: Partial<Settings>): void {
     gameStore.set((s) => updateSettings(s, patch));
     if (patch.sound !== undefined) setSoundEnabled(patch.sound);
+    if (patch.music !== undefined) setMusicEnabled(patch.music);
     save();
   },
   closeOfflineReport(): void {
@@ -509,6 +510,7 @@ export const actions = {
     if (!parsed) return false;
     gameStore.set({ ...parsed, lastSavedAt: Date.now() });
     setSoundEnabled(parsed.settings.sound);
+    setMusicEnabled(parsed.settings.music);
     uiStore.set((u) => ({ ...u, logs: [], toasts: [], floats: [], mood: baseMood(parsed) }));
     pushLog('📥', '저장 데이터를 불러왔습니다.', 'good');
     save();
@@ -610,7 +612,6 @@ export function bootGame(): void {
   const loaded = loadGame();
   if (loaded) {
     gameStore.set(loaded);
-    setSoundEnabled(loaded.settings.sound);
     applyOffline(now);
     pushLog('👋', '다시 돌아온 걸 환영합니다! ZUN이 기다리고 있었어요.');
   } else {
@@ -618,6 +619,10 @@ export function bootGame(): void {
     pushLog('🌱', '작은 자취방에서 ZUN의 개발자 인생이 시작됩니다. 첫 프로젝트를 만들어보세요!');
     save();
   }
+  // 새로 온 사람에게도 똑같이 걸어야 한다 — 불러온 경우에만 하면 첫 방문자는 소리가 없다
+  const { sound, music } = gameStore.get().settings;
+  setSoundEnabled(sound);
+  setMusicEnabled(music);
   if (dailyAvailable(gameStore.get(), now) && gameStore.get().stats.projectsCompleted > 0) {
     uiStore.set((u) => ({ ...u, dailyOpen: true }));
   }

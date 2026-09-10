@@ -60,7 +60,7 @@ export function createInitialState(now = Date.now()): GameState {
     lastSavedAt: now,
     lastEventAt: now,
     createdAt: now,
-    settings: { sound: true, reducedMotion: false, buyMode: 1 },
+    settings: { sound: true, music: true, reducedMotion: false, buyMode: 1 },
     stats: {
       totalEarned: 0, totalSpent: 0, projectsCompleted: 0, bugsFixed: 0, eventsTriggered: 0,
       playTime: 0, bestIncome: 0, peakUsers: 0, offlineEarned: 0,

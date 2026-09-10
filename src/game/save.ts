@@ -97,6 +97,7 @@ export function sanitize(raw: unknown, now = Date.now()): GameState {
     createdAt: num(r.createdAt, now, 0, now),
     settings: {
       sound: bool(settings.sound, true),
+      music: bool(settings.music, true),
       reducedMotion: bool(settings.reducedMotion, false),
       buyMode: ([1, 10, -1] as const).includes(settings.buyMode as 1) ? (settings.buyMode as 1 | 10 | -1) : 1,
     },

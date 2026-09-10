@@ -42,6 +42,7 @@ export function SettingsPanel() {
 
       <div className="card flex flex-col divide-y divide-line">
         <Toggle label="효과음" desc="구매, 출시, 레벨업 효과음" value={settings.sound} onChange={(v) => actions.updateSettings({ sound: v })} />
+        <Toggle label="배경음악" desc="자취방에 어울리는 잔잔한 반복 연주" value={settings.music} onChange={(v) => actions.updateSettings({ music: v })} />
         <Toggle label="애니메이션 줄이기" desc="저사양 기기에서 부드럽게 플레이" value={settings.reducedMotion} onChange={(v) => actions.updateSettings({ reducedMotion: v })} />
       </div>
 
