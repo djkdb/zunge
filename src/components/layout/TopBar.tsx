@@ -24,7 +24,7 @@ export function TopBar() {
   const strained = overload >= 0.95;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur-md">
+    <header className="safe-top safe-x sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2 md:px-5">
         {/* 로고 */}
         <h1 className="hidden shrink-0 flex-col leading-none md:flex">

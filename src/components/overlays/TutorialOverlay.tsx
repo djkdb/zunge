@@ -98,7 +98,8 @@ export function TutorialOverlay() {
         className={`absolute inset-x-0 flex justify-center px-4 ${placeBelow ? '' : 'top-0'}`}
         style={placeBelow
           ? { top: rect ? Math.min(rect.top + rect.height + pad + 12, vh - CARD_H - 16) : '50%', transform: rect ? undefined : 'translateY(-50%)' }
-          : { top: Math.max(12, rect!.top - pad - CARD_H - 12) }}
+          // 위쪽에 붙일 때는 노치·다이나믹 아일랜드 아래로 내린다
+          : { top: `max(calc(var(--safe-top) + 12px), ${rect!.top - pad - CARD_H - 12}px)` }}
       >
         <div className="card anim-pop w-full max-w-sm p-4">
           <div className="flex items-start gap-3">

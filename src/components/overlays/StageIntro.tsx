@@ -28,7 +28,7 @@ export function StageIntro() {
   const ai = aiTier(aiT);
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-navy-deep/90 p-4 backdrop-blur-sm">
+    <div className="safe-pad fixed inset-0 z-[60] flex items-center justify-center bg-navy-deep/90 backdrop-blur-sm">
       {phase === 'flash' && <div className="absolute inset-0 bg-white" style={{ animation: 'stage-flash 0.7s ease-out forwards' }} />}
       {phase === 'reveal' && (
         <div className="card anim-pop relative w-full max-w-lg overflow-hidden">

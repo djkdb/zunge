@@ -20,7 +20,7 @@ export function Modal({ open, onClose, children, className = '', dim = 'bg-navy-
   if (!open) return null;
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 anim-fade ${dim} backdrop-blur-[3px]`}
+      className={`safe-pad fixed inset-0 z-50 flex items-center justify-center anim-fade ${dim} backdrop-blur-[3px]`}
       onClick={onClose}
       role="dialog"
       aria-modal="true"

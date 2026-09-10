@@ -13,7 +13,7 @@ export const TABS: { id: Tab; icon: IconName; label: string }[] = [
 
 export function BottomNav({ tab, onChange, badges }: { tab: Tab; onChange: (t: Tab) => void; badges: Partial<Record<Tab, boolean>> }) {
   return (
-    <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 backdrop-blur-md md:hidden">
+    <nav className="safe-bottom safe-x fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 backdrop-blur-md md:hidden">
       <div className="grid grid-cols-6">
         {TABS.map((t) => {
           const active = tab === t.id;

@@ -48,7 +48,38 @@ button { font-family: inherit; }
 .pixel { image-rendering: pixelated; shape-rendering: crispEdges; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
-.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+/*
+ * 노치 · 다이나믹 아일랜드 피하기.
+ *
+ * 홈 화면에 추가해 앱으로 열면 상태바 아래까지 화면이 넓어진다
+ * (viewport-fit=cover + black-translucent). 그대로 두면 상단바가
+ * 시계와 다이나믹 아일랜드에 가려 자금도 레벨도 안 보인다.
+ * 배경은 끝까지 채우되 내용만 안전 영역 안으로 밀어 넣는다.
+ *
+ * env() 를 변수로 한 번 받아 둔다. 값을 쓰는 곳이 여러 군데라 한자리에
+ * 모아 두는 편이 낫고, 테스트에서 이 변수만 바꿔 노치 있는 기기를
+ * 흉내 낼 수 있다.
+ */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+.safe-top { padding-top: var(--safe-top); }
+.safe-bottom { padding-bottom: var(--safe-bottom); }
+/* 화면을 꽉 채우는 오버레이용 — 기본 여백과 안전 영역 중 큰 쪽을 쓴다 */
+.safe-pad {
+  padding-top: max(1rem, var(--safe-top));
+  padding-bottom: max(1rem, var(--safe-bottom));
+  padding-left: max(1rem, var(--safe-left));
+  padding-right: max(1rem, var(--safe-right));
+}
+/* 가로 모드에서는 좌우에도 노치가 걸린다 */
+.safe-x {
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
 
 /* ───── 키프레임 ───── */
 @keyframes float-up {
